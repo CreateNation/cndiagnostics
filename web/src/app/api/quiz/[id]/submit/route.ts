@@ -6,9 +6,9 @@ import {
   updateSubmission,
 } from "@/lib/store";
 import { generateClientReport } from "@/lib/report/generate";
-import { buildGhlFields, pushToGhl, stripCloserOnly } from "@/lib/ghl";
 import { absoluteUrl } from "@/lib/urls";
 import { ensureReportEmailSent } from "@/lib/report-email";
+import { syncDiagnosticLeadToGhl } from "@/lib/ghl-lead";
 import type { Answers, AdvisorIntel } from "@/lib/types";
 
 export async function POST(
@@ -105,28 +105,11 @@ export async function POST(
     await appendEvent(id, "advisor_report_ready");
 
     const clientUrl = absoluteUrl(`/report/${ready.clientReportToken}`);
-    const advisorUrl = absoluteUrl(`/advisor/${ready.advisorReportToken}`);
-    const fields = buildGhlFields(ready, scoring, {
-      client: clientUrl,
-      advisor: advisorUrl,
-    });
 
-    await pushToGhl({
-      event: "client_report_ready",
-      submission_id: id,
-      email: String(answers.Q25),
-      name: submission.name,
-      fields: stripCloserOnly(fields),
-      contactFacingSafe: true,
-    });
-
-    await pushToGhl({
-      event: "advisor_report_ready",
-      submission_id: id,
-      email: String(answers.Q25),
-      name: submission.name,
-      fields,
-      contactFacingSafe: false,
+    const ghlSync = await syncDiagnosticLeadToGhl(ready);
+    await appendEvent(id, "ghl_lead_synced", {
+      contactId: ghlSync.contactId,
+      error: ghlSync.error ?? null,
     });
 
     const emailResult = await ensureReportEmailSent(id);
@@ -137,6 +120,7 @@ export async function POST(
       reportUrl: clientUrl,
       cta: scoring.cta,
       stageName: scoring.stageName,
+      ghl: ghlSync,
       email: emailResult,
     });
   } catch (err) {

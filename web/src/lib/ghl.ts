@@ -145,6 +145,7 @@ export async function upsertGhlContact(input: {
   phone?: string | null;
   tags?: string[];
   fields?: Record<string, string | number | null>;
+  type?: "lead" | "customer";
 }): Promise<{ contactId: string | null; error?: string }> {
   const locationId = process.env.GHL_LOCATION_ID;
   if (!locationId) {
@@ -155,6 +156,7 @@ export async function upsertGhlContact(input: {
     locationId,
     email: input.email,
     source: "CNM Growth Diagnostic",
+    type: input.type ?? "lead",
   };
 
   if (input.name) body.name = input.name;
@@ -181,6 +183,29 @@ export async function upsertGhlContact(input: {
   const contactId =
     result.data?.contact?.id ?? result.data?.id ?? null;
   return { contactId };
+}
+
+export async function addGhlContactNote(input: {
+  contactId: string;
+  body: string;
+}): Promise<{ noteId?: string; error?: string }> {
+  const result = await ghlFetch<{ note?: { id?: string }; id?: string }>(
+    `/contacts/${input.contactId}/notes`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        body: input.body,
+      }),
+    },
+  );
+
+  if (!result.ok) {
+    return { error: result.error || "Failed to create GHL note" };
+  }
+
+  return {
+    noteId: result.data?.note?.id ?? result.data?.id,
+  };
 }
 
 export async function sendGhlEmail(input: {
@@ -253,26 +278,7 @@ export async function sendGhlEmail(input: {
   };
 }
 
-export async function pushToGhl(payload: GhlPayload): Promise<void> {
-  console.info("[GHL]", payload.event, payload.email, payload.submission_id);
-
-  if (payload.email && isGhlApiConfigured()) {
-    const upsert = await upsertGhlContact({
-      email: payload.email,
-      name: payload.name,
-      tags:
-        payload.event === "purchase_completed"
-          ? ["Paid - Diagnostic"]
-          : payload.event === "client_report_ready"
-            ? ["Diagnostic Report Ready"]
-            : undefined,
-      fields: payload.fields,
-    });
-    if (upsert.error) {
-      console.error("[GHL] contact sync failed", upsert.error);
-    }
-  }
-
+export async function fireGhlWebhook(payload: GhlPayload): Promise<void> {
   const url = process.env.GHL_WEBHOOK_URL;
   if (!url) return;
 
@@ -288,4 +294,26 @@ export async function pushToGhl(payload: GhlPayload): Promise<void> {
   } catch (err) {
     console.error("[GHL] webhook failed", err);
   }
+}
+
+export async function pushToGhl(payload: GhlPayload): Promise<void> {
+  console.info("[GHL]", payload.event, payload.email, payload.submission_id);
+
+  if (payload.email && isGhlApiConfigured()) {
+    const upsert = await upsertGhlContact({
+      email: payload.email,
+      name: payload.name,
+      tags:
+        payload.event === "purchase_completed"
+          ? ["Paid - Diagnostic", "CNM Diagnostic Lead"]
+          : undefined,
+      fields: payload.fields,
+      type: "lead",
+    });
+    if (upsert.error) {
+      console.error("[GHL] contact sync failed", upsert.error);
+    }
+  }
+
+  await fireGhlWebhook(payload);
 }
