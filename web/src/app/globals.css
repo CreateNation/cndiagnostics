@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+:root {
+  --cn-red: #e44336;
+  --cn-red-dark: #c2342a;
+  --cn-ink: #0e0e0e;
+  --cn-muted: #667070;
+  --cn-paper: #f3f3f1;
+  --cn-line: #dddcd7;
+  --cn-white: #ffffff;
+  --cn-charcoal: #121212;
+  --cn-charcoal-2: #1a1a1a;
+  --background: var(--cn-paper);
+  --foreground: var(--cn-ink);
+  --radius-btn: 0.55rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cn-red: var(--cn-red);
+  --color-cn-ink: var(--cn-ink);
+  --color-cn-muted: var(--cn-muted);
+  --color-cn-paper: var(--cn-paper);
+  --color-cn-line: var(--cn-line);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), Cairo, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--cn-red) 28%, white);
+  color: var(--cn-ink);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes mark-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(-2deg);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes draw-line {
+  from {
+    width: 0;
+  }
+  to {
+    width: 6rem;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+}
+
+.animate-fade-up-late {
+  animation: fade-up 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.6s ease-in-out infinite;
+}
+
+.animate-mark-drift {
+  animation: mark-drift 7s ease-in-out infinite;
+}
+
+.animate-draw-line {
+  animation: draw-line 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+
+.cn-display {
+  font-family: var(--font-display), "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-variation-settings: "wdth" 100;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  background: var(--cn-red);
+  color: white;
+  font-family: var(--font-display), "Zalando Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-variation-settings: "wdth" 100;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-btn);
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cn-btn:hover {
+  background: var(--cn-red-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--cn-red) 28%, transparent);
+}
+
+.cn-btn:disabled {
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.cn-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: white;
+  font-family: var(--font-display), "Zalando Sans", sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.95rem 1.35rem;
+  border-radius: var(--radius-btn);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.cn-btn-ghost:hover {
+  border-color: white;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cn-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  padding: 0.95rem 1.05rem;
+  border-radius: var(--radius-btn);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.cn-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.cn-input:focus {
+  border-color: var(--cn-red);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.cn-input-light {
+  width: 100%;
+  border: 1px solid var(--cn-line);
+  background: white;
+  color: var(--cn-ink);
+  padding: 0.95rem 1.05rem;
+  border-radius: var(--radius-btn);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.cn-input-light:focus {
+  border-color: var(--cn-red);
+}
+
+.cn-surface-dark {
+  background:
+    radial-gradient(
+      ellipse at 12% 0%,
+      color-mix(in srgb, var(--cn-red) 34%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(ellipse at 88% 18%, rgba(255, 255, 255, 0.07), transparent 34%),
+    linear-gradient(165deg, #0a0a0a 0%, #141414 48%, #1a1010 100%);
+}
+
+.cn-arc-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.045' stroke-width='1.2'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Cpath d='M12 118h56v24c0 18-4 32-12 42s-18 18-32 24'/%3E%3Ccircle cx='170' cy='160' r='28'/%3E%3Cpath d='M142 70h56v24c0 18-4 32-12 42s-18 18-32 24'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+.cn-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-delay,
+  .animate-fade-up-late,
+  .animate-pulse-soft,
+  .animate-mark-drift,
+  .animate-draw-line {
+    animation: none !important;
+  }
+}
