@@ -14,7 +14,9 @@ import {
   fireGhlWebhook,
   isGhlApiConfigured,
   upsertGhlContact,
+  upsertGhlOpportunity,
 } from "./ghl";
+import { updateSubmission } from "./store";
 
 function formatAnswerValue(
   value: AnswerValue | undefined,
@@ -90,12 +92,24 @@ function buildLeadNote(input: {
  */
 export async function syncDiagnosticLeadToGhl(
   submission: Submission,
-): Promise<{ contactId: string | null; error?: string }> {
+): Promise<{
+  contactId: string | null;
+  opportunityId: string | null;
+  error?: string;
+}> {
   if (!submission.email || !submission.scoring || !submission.report) {
-    return { contactId: null, error: "Submission incomplete for GHL sync" };
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "Submission incomplete for GHL sync",
+    };
   }
   if (!isGhlApiConfigured() && !process.env.GHL_WEBHOOK_URL) {
-    return { contactId: null, error: "GHL not configured" };
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "GHL not configured",
+    };
   }
 
   const scoring = submission.scoring;
@@ -136,7 +150,9 @@ export async function syncDiagnosticLeadToGhl(
     `Band ${scoring.band}`,
   ];
 
-  let contactId: string | null = null;
+  let contactId: string | null = submission.ghlContactId;
+  let opportunityId: string | null = submission.ghlOpportunityId;
+  let error: string | undefined;
 
   if (isGhlApiConfigured()) {
     const upsert = await upsertGhlContact({
@@ -147,8 +163,9 @@ export async function syncDiagnosticLeadToGhl(
       fields,
       type: "lead",
     });
-    contactId = upsert.contactId;
+    contactId = upsert.contactId ?? contactId;
     if (upsert.error) {
+      error = upsert.error;
       console.error("[GHL] lead upsert failed", upsert.error);
     }
 
@@ -168,7 +185,31 @@ export async function syncDiagnosticLeadToGhl(
       if (noteResult.error) {
         console.error("[GHL] lead note failed", noteResult.error);
       }
+
+      const opportunityName = [
+        submission.name || submission.email,
+        "—",
+        "CNM Diagnostic",
+        `(${scoring.stageName})`,
+      ].join(" ");
+
+      const opportunity = await upsertGhlOpportunity({
+        contactId,
+        name: opportunityName,
+        cta: scoring.cta,
+        existingOpportunityId: opportunityId,
+      });
+      opportunityId = opportunity.opportunityId ?? opportunityId;
+      if (opportunity.error) {
+        error = error ? `${error}; ${opportunity.error}` : opportunity.error;
+        console.error("[GHL] opportunity sync failed", opportunity.error);
+      }
     }
+
+    await updateSubmission(submission.id, {
+      ghlContactId: contactId,
+      ghlOpportunityId: opportunityId,
+    });
   }
 
   // Keep webhook events for GHL workflows (email nurture / booking branches).
@@ -197,5 +238,5 @@ export async function syncDiagnosticLeadToGhl(
     contactFacingSafe: false,
   });
 
-  return { contactId };
+  return { contactId, opportunityId, error };
 }

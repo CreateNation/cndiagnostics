@@ -109,6 +109,7 @@ export async function POST(
     const ghlSync = await syncDiagnosticLeadToGhl(ready);
     await appendEvent(id, "ghl_lead_synced", {
       contactId: ghlSync.contactId,
+      opportunityId: ghlSync.opportunityId,
       error: ghlSync.error ?? null,
     });
 

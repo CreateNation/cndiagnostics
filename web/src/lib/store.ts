@@ -104,6 +104,8 @@ export async function createSubmission(
     report: partial?.report ?? null,
     advisorIntel: partial?.advisorIntel ?? null,
     reportEmailSentAt: partial?.reportEmailSentAt ?? null,
+    ghlContactId: partial?.ghlContactId ?? null,
+    ghlOpportunityId: partial?.ghlOpportunityId ?? null,
     events: partial?.events ?? [],
   };
   return saveSubmission(submission);

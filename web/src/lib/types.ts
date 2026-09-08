@@ -58,6 +58,8 @@ export type Submission = {
   report: ClientReport | null;
   advisorIntel: AdvisorIntel | null;
   reportEmailSentAt: string | null;
+  ghlContactId: string | null;
+  ghlOpportunityId: string | null;
   events: FunnelEvent[];
 };
 

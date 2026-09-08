@@ -208,6 +208,135 @@ export async function addGhlContactNote(input: {
   };
 }
 
+export async function listGhlPipelines(): Promise<{
+  pipelines: Array<{
+    id: string;
+    name: string;
+    stages: Array<{ id: string; name: string }>;
+  }>;
+  error?: string;
+}> {
+  const locationId = process.env.GHL_LOCATION_ID;
+  if (!locationId) {
+    return { pipelines: [], error: "GHL_LOCATION_ID missing" };
+  }
+
+  const result = await ghlFetch<{
+    pipelines?: Array<{
+      id: string;
+      name: string;
+      stages?: Array<{ id: string; name: string }>;
+    }>;
+  }>(`/opportunities/pipelines?locationId=${encodeURIComponent(locationId)}`);
+
+  if (!result.ok) {
+    return {
+      pipelines: [],
+      error: result.error || "Failed to list pipelines",
+    };
+  }
+
+  return {
+    pipelines: (result.data?.pipelines ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      stages: (p.stages ?? []).map((s) => ({ id: s.id, name: s.name })),
+    })),
+  };
+}
+
+function resolvePipelineStageId(cta: ScoringResult["cta"]): string | null {
+  if (cta === "book_call" && process.env.GHL_STAGE_BOOK_CALL) {
+    return process.env.GHL_STAGE_BOOK_CALL;
+  }
+  if (cta === "email_nurture" && process.env.GHL_STAGE_NURTURE) {
+    return process.env.GHL_STAGE_NURTURE;
+  }
+  return process.env.GHL_STAGE_REPORT_READY || null;
+}
+
+export async function upsertGhlOpportunity(input: {
+  contactId: string;
+  name: string;
+  cta: ScoringResult["cta"];
+  existingOpportunityId?: string | null;
+  monetaryValue?: number;
+}): Promise<{ opportunityId: string | null; error?: string }> {
+  const locationId = process.env.GHL_LOCATION_ID;
+  const pipelineId = process.env.GHL_PIPELINE_ID;
+  const pipelineStageId = resolvePipelineStageId(input.cta);
+
+  if (!locationId) {
+    return { opportunityId: null, error: "GHL_LOCATION_ID missing" };
+  }
+  if (!pipelineId || !pipelineStageId) {
+    return {
+      opportunityId: null,
+      error:
+        "Set GHL_PIPELINE_ID and GHL_STAGE_REPORT_READY (optional: GHL_STAGE_BOOK_CALL, GHL_STAGE_NURTURE)",
+    };
+  }
+
+  if (input.existingOpportunityId) {
+    const updated = await ghlFetch<{
+      opportunity?: { id?: string };
+      id?: string;
+    }>(`/opportunities/${input.existingOpportunityId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        pipelineId,
+        pipelineStageId,
+        name: input.name,
+        status: "open",
+        ...(typeof input.monetaryValue === "number"
+          ? { monetaryValue: input.monetaryValue }
+          : {}),
+      }),
+    });
+
+    if (updated.ok) {
+      return {
+        opportunityId:
+          updated.data?.opportunity?.id ??
+          updated.data?.id ??
+          input.existingOpportunityId,
+      };
+    }
+    console.error("[GHL] opportunity update failed", updated.error);
+  }
+
+  const created = await ghlFetch<{
+    opportunity?: { id?: string };
+    id?: string;
+  }>("/opportunities/", {
+    method: "POST",
+    body: JSON.stringify({
+      locationId,
+      pipelineId,
+      pipelineStageId,
+      contactId: input.contactId,
+      name: input.name,
+      status: "open",
+      source: "CNM Growth Diagnostic",
+      ...(typeof input.monetaryValue === "number"
+        ? { monetaryValue: input.monetaryValue }
+        : {}),
+    }),
+  });
+
+  if (!created.ok) {
+    return {
+      opportunityId: null,
+      error: created.error || "Failed to create GHL opportunity",
+    };
+  }
+
+  return {
+    opportunityId:
+      created.data?.opportunity?.id ?? created.data?.id ?? null,
+  };
+}
+
 export async function sendGhlEmail(input: {
   contactId: string;
   to: string;
