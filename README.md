@@ -22,7 +22,7 @@ npm run dev
 1. Import this GitHub repo in Vercel
 2. Set **Root Directory** to `web`
 3. Add env vars from `web/.env.example`
-4. Set `NEXT_PUBLIC_APP_URL` to your live URL (e.g. `https://diagnostic.create-nation.com`)
+4. Set `APP_URL` to your live URL (e.g. `https://diagnostic.create-nation.com`)
 5. Deploy, then attach custom domain `diagnostic.create-nation.com` (CNAME from Hostinger)
 
 Production domain: **diagnostic.create-nation.com**

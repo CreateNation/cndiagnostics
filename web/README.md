@@ -27,7 +27,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GHL_EMAIL_FROM` | Verified from-address for report emails |
 | `GHL_WEBHOOK_URL` | Inbound webhook for GHL workflows |
 | `GHL_CUSTOM_FIELD_IDS` | Optional JSON map of field key → GHL field id |
-| `NEXT_PUBLIC_GHL_BOOKING_URL` | Stage 4–6 calendar link |
+| `GHL_BOOKING_URL` | Stage 4–6 calendar link (optional) |
 
 ### Routes
 | Path | Purpose |
