@@ -9,7 +9,7 @@ export function BrandLogo({
   size?: "sm" | "md" | "lg";
 }) {
   const lightBg = tone === "light";
-  const height = size === "lg" ? 88 : size === "sm" ? 30 : 48;
+  const height = size === "lg" ? 108 : size === "sm" ? 48 : 72;
   const width = Math.round(height * 3.4);
 
   return (
@@ -18,7 +18,7 @@ export function BrandLogo({
       alt="Create Nation"
       width={width}
       height={height}
-      className="h-auto w-auto"
+      className="h-auto w-auto max-w-[min(100%,20rem)]"
       style={{ height, width: "auto" }}
       priority
     />
@@ -72,14 +72,8 @@ export function SiteFooter({
       }`}
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-9 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Image
-            src={dark ? "/brand/mark-white.png" : "/brand/mark.png"}
-            alt=""
-            width={28}
-            height={28}
-            className="h-7 w-7 object-contain opacity-80"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <BrandLogo tone={dark ? "dark" : "light"} size="sm" />
           <p className="cn-display text-xs tracking-[0.18em]">
             Create Nation © {new Date().getFullYear()}
           </p>

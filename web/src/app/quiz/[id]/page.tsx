@@ -37,7 +37,7 @@ export default async function QuizPage({
       <header className="sticky top-0 z-20 border-b border-[var(--cn-line)] bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-4">
-            <BrandLogo tone="light" size="sm" />
+            <BrandLogo tone="light" size="md" />
             <span className="cn-display hidden text-[10px] tracking-[0.22em] text-[var(--cn-ink)] sm:inline">
               Growth Diagnostic
             </span>

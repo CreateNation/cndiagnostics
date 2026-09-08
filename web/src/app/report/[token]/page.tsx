@@ -52,7 +52,7 @@ export default async function ClientReportPage({
         />
         <div className="relative mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
           <Link href="/">
-            <BrandLogo size="sm" />
+            <BrandLogo size="md" />
           </Link>
           <span className="cn-display text-[10px] tracking-[0.2em] text-white/45">
             Growth Diagnostic

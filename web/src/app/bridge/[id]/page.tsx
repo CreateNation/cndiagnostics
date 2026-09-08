@@ -30,7 +30,7 @@ export default async function BridgePage({
       <header className="relative z-10 border-b border-white/10">
         <div className="mx-auto flex max-w-3xl items-center px-6 py-6">
           <Link href="/">
-            <BrandLogo size="sm" />
+            <BrandLogo size="md" />
           </Link>
         </div>
       </header>
