@@ -11,6 +11,7 @@ function buildReportEmailHtml(input: {
   name: string | null;
   stageName: string;
   reportUrl: string;
+  pdfUrl: string;
   cta: ScoringResult["cta"];
 }): string {
   const greeting = input.name ? `Hi ${input.name.split(" ")[0]},` : "Hi,";
@@ -39,14 +40,19 @@ function buildReportEmailHtml(input: {
                 Your personalized Business Growth Diagnostic is ready. We scored your funnel across five dimensions and identified your current stage:
                 <strong>${input.stageName}</strong>.
               </p>
+              <p style="margin:0 0 12px;">
+                <a href="${input.pdfUrl}" style="display:inline-block;background:#e44336;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Download PDF report
+                </a>
+              </p>
               <p style="margin:0 0 24px;">
-                <a href="${input.reportUrl}" style="display:inline-block;background:#e44336;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
-                  Open my report
+                <a href="${input.reportUrl}" style="display:inline-block;border:1px solid #e44336;color:#e44336;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Open online report
                 </a>
               </p>
               <p style="margin:0;font-size:14px;line-height:1.5;color:#667070;">
-                Or copy this link:<br/>
-                <a href="${input.reportUrl}" style="color:#e44336;word-break:break-all;">${input.reportUrl}</a>
+                PDF link:<br/>
+                <a href="${input.pdfUrl}" style="color:#e44336;word-break:break-all;">${input.pdfUrl}</a>
               </p>
               ${booking}
             </td>
@@ -66,6 +72,7 @@ function buildReportEmailHtml(input: {
 
 /**
  * Deliver the client report email through GoHighLevel when configured.
+ * Includes a downloadable PDF (generated on demand via /api/report/[token]/pdf).
  */
 export async function sendReportEmail(input: {
   to: string;
@@ -76,11 +83,13 @@ export async function sendReportEmail(input: {
   report: ClientReport;
 }): Promise<{ sent: boolean; mode: string; error?: string; contactId?: string }> {
   const reportUrl = absoluteUrl(`/report/${input.clientToken}`);
+  const pdfUrl = absoluteUrl(`/api/report/${input.clientToken}/pdf`);
   const subject = `Your Create Nation Growth Diagnostic — ${input.scoring.stageName}`;
   const html = buildReportEmailHtml({
     name: input.name,
     stageName: input.scoring.stageName,
     reportUrl,
+    pdfUrl,
     cta: input.scoring.cta,
   });
 
@@ -92,6 +101,7 @@ export async function sendReportEmail(input: {
       fields: {
         cnm_diag_stage: input.scoring.stageName,
         cnm_diag_report_url: reportUrl,
+        cnm_diag_pdf_url: pdfUrl,
         cnm_diag_cta: input.scoring.cta,
         cnm_diag_submission_id: input.submissionId,
       },
@@ -110,7 +120,8 @@ export async function sendReportEmail(input: {
       to: input.to,
       subject,
       html,
-      text: `Your Growth Diagnostic is ready: ${reportUrl}`,
+      text: `Your Growth Diagnostic is ready.\nPDF: ${pdfUrl}\nOnline: ${reportUrl}`,
+      attachments: [pdfUrl],
     });
 
     if (!email.sent) {
@@ -129,8 +140,6 @@ export async function sendReportEmail(input: {
     };
   }
 
-  // Webhook / contact-sync mode: CRM already receives `client_report_ready`
-  // from submit. A GHL workflow on that event should send the email.
   if (process.env.GHL_WEBHOOK_URL) {
     return {
       sent: true,
@@ -146,6 +155,7 @@ export async function sendReportEmail(input: {
       fields: {
         cnm_diag_stage: input.scoring.stageName,
         cnm_diag_report_url: reportUrl,
+        cnm_diag_pdf_url: pdfUrl,
         cnm_diag_cta: input.scoring.cta,
         cnm_diag_submission_id: input.submissionId,
       },
@@ -164,6 +174,7 @@ export async function sendReportEmail(input: {
     to: input.to,
     stage: input.scoring.stageName,
     reportUrl,
+    pdfUrl,
     submissionId: input.submissionId,
   });
 

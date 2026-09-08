@@ -76,6 +76,13 @@ export default async function ClientReportPage({
             <span className="mx-2 text-white/25">·</span>
             {pages.cover.date}
           </p>
+          <a
+            href={`/api/report/${token}/pdf`}
+            className="cn-btn mt-8 inline-flex"
+          >
+            Download PDF
+            <span aria-hidden>↗</span>
+          </a>
         </div>
       </header>
 

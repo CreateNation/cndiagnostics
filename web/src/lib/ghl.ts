@@ -189,11 +189,15 @@ export async function sendGhlEmail(input: {
   subject: string;
   html: string;
   text?: string;
+  attachments?: string[];
 }): Promise<{ sent: boolean; messageId?: string; error?: string }> {
   const emailFrom = process.env.GHL_EMAIL_FROM;
   if (!emailFrom) {
     return { sent: false, error: "GHL_EMAIL_FROM missing" };
   }
+
+  const attachments =
+    input.attachments?.filter((url) => Boolean(url.trim())) ?? [];
 
   // Prefer official Conversations send endpoint; fall back to /outbound shape.
   const primary = await ghlFetch<{
@@ -209,6 +213,7 @@ export async function sendGhlEmail(input: {
       subject: input.subject,
       html: input.html,
       message: input.text ?? input.subject,
+      ...(attachments.length ? { attachments } : {}),
     }),
   });
 
@@ -227,6 +232,7 @@ export async function sendGhlEmail(input: {
       emailTo: input.to,
       emailSubject: input.subject,
       emailBody: input.html,
+      ...(attachments.length ? { attachments } : {}),
     }),
   });
 

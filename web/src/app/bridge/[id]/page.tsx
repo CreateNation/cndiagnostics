@@ -68,7 +68,7 @@ export default async function BridgePage({
           {failed
             ? "Please retry from the quiz or contact us. Your answers were saved."
             : ready
-              ? "Based on your answers, your personalized growth report is ready to open — and we’re sending a copy to your email."
+              ? "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."
               : "We’re generating your personalized growth report now. This usually takes under a minute."}
         </p>
 
