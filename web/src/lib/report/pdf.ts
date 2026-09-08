@@ -34,8 +34,10 @@ function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
 export async function buildReportPdf(input: {
   report: ClientReport;
   scoring: ScoringResult | null;
+  ninetyDayUnlocked?: boolean;
 }): Promise<Buffer> {
   const pages = normalizeReportPages(input.report.pages, input.scoring);
+  const unlocked = Boolean(input.ninetyDayUnlocked);
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -118,11 +120,21 @@ export async function buildReportPdf(input: {
     }
 
     sectionTitle(doc, "Directional 90-day path");
-    for (const week of pages.ninetyDayPath.weeks) {
-      doc.fontSize(11).fillColor(INK).text(week.label, { paragraphGap: 2 });
-      doc.fontSize(10).fillColor(MUTED).text(week.focus, { paragraphGap: 6 });
+    if (unlocked) {
+      for (const week of pages.ninetyDayPath.weeks) {
+        doc.fontSize(11).fillColor(INK).text(week.label, { paragraphGap: 2 });
+        doc.fontSize(10).fillColor(MUTED).text(week.focus, { paragraphGap: 6 });
+      }
+      doc.fontSize(9).fillColor(MUTED).text(pages.ninetyDayPath.assumptions);
+    } else {
+      doc
+        .fontSize(11)
+        .fillColor(MUTED)
+        .text(
+          "This section is unlocked during your complimentary strategy call. Book a call and we’ll share the access code live.",
+          { paragraphGap: 6 },
+        );
     }
-    doc.fontSize(9).fillColor(MUTED).text(pages.ninetyDayPath.assumptions);
 
     sectionTitle(doc, "7-day quick wins");
     bullets(doc, pages.quickWins);

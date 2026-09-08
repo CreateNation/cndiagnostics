@@ -69,6 +69,7 @@ function buildLeadNote(input: {
     `Spend: ${input.scoring.spend ?? "—"} | Team: ${input.scoring.team ?? "—"}`,
     `Dimensions: ${dims}`,
     `Primary bottleneck: ${pages.bottleneck.title}`,
+    `90-day unlock code (share on call): ${input.submission.ninetyDayUnlockCode ?? "—"}`,
     "",
     "REPORT LINKS",
     `Client report: ${input.reportUrl}`,

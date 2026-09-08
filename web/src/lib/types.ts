@@ -60,6 +60,8 @@ export type Submission = {
   reportEmailSentAt: string | null;
   ghlContactId: string | null;
   ghlOpportunityId: string | null;
+  ninetyDayUnlockCode: string | null;
+  ninetyDayUnlockedAt: string | null;
   events: FunnelEvent[];
 };
 

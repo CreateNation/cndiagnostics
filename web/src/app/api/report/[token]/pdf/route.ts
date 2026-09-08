@@ -16,6 +16,7 @@ export async function GET(
     const pdf = await buildReportPdf({
       report: submission.report,
       scoring: submission.scoring,
+      ninetyDayUnlocked: Boolean(submission.ninetyDayUnlockedAt),
     });
     const filename = reportPdfFilename(
       submission.report.pages.cover.businessName || "report",

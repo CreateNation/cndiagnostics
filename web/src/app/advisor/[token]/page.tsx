@@ -45,6 +45,25 @@ export default async function AdvisorReportPage({
           <Stat label="Confidence" value={intel.confidence} />
         </div>
 
+        <section className="rounded-lg border border-[var(--cn-red)]/40 bg-[var(--cn-red)]/10 p-5">
+          <h2 className="cn-display text-xl text-[var(--cn-red)]">
+            90-day path unlock code
+          </h2>
+          <p className="mt-2 text-sm text-white/65">
+            Share this with the client during the complimentary call so they can
+            unlock the Directional 90-day path on their report.
+          </p>
+          <p className="cn-display mt-4 text-4xl tracking-[0.28em] text-white">
+            {submission.ninetyDayUnlockCode ?? "—"}
+          </p>
+          <p className="mt-3 text-xs text-white/45">
+            Status:{" "}
+            {submission.ninetyDayUnlockedAt
+              ? `Unlocked ${submission.ninetyDayUnlockedAt}`
+              : "Still locked for client"}
+          </p>
+        </section>
+
         <section className="rounded-lg border border-white/10 p-5">
           <h2 className="cn-display text-xl">
             Closer signals

@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getByClientToken } from "@/lib/store";
+import { getByClientToken, updateSubmission } from "@/lib/store";
 import { bookingUrl } from "@/lib/urls";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
+import { NinetyDayGate } from "@/components/ninety-day-gate";
 import { normalizeReportPages } from "@/lib/report/normalize";
+import { createNinetyDayUnlockCode } from "@/lib/unlock-code";
 
 const DIM_LABELS: Record<string, string> = {
   audience: "Audience & Positioning",
@@ -33,14 +35,22 @@ export default async function ClientReportPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const submission = await getByClientToken(token);
+  let submission = await getByClientToken(token);
   if (!submission?.report) notFound();
+
+  if (!submission.ninetyDayUnlockCode) {
+    submission = await updateSubmission(submission.id, {
+      ninetyDayUnlockCode: createNinetyDayUnlockCode(),
+    });
+  }
+  if (!submission.report) notFound();
 
   const pages = normalizeReportPages(
     submission.report.pages,
     submission.scoring,
   );
   const cta = pages.nextStep.cta;
+  const ninetyDayUnlocked = Boolean(submission.ninetyDayUnlockedAt);
 
   return (
     <div className="min-h-full bg-[var(--cn-paper)]">
@@ -190,26 +200,32 @@ export default async function ClientReportPage({
         </Section>
 
         <Section title="Directional 90-day path">
-          <ul className="space-y-6">
-            {pages.ninetyDayPath.weeks.map((w, i) => (
-              <li key={w.label} className="flex gap-4">
-                <span className="cn-display mt-0.5 text-sm text-[var(--cn-red)]">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="cn-display text-base text-[var(--cn-ink)]">
-                    {w.label}
-                  </p>
-                  <p className="mt-1 leading-relaxed text-[var(--cn-muted)]">
-                    {w.focus}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 text-sm text-[var(--cn-muted)]">
-            {pages.ninetyDayPath.assumptions}
-          </p>
+          <NinetyDayGate
+            token={token}
+            unlocked={ninetyDayUnlocked}
+            bookingHref={bookingUrl()}
+          >
+            <ul className="space-y-6">
+              {pages.ninetyDayPath.weeks.map((w, i) => (
+                <li key={w.label} className="flex gap-4">
+                  <span className="cn-display mt-0.5 text-sm text-[var(--cn-red)]">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="cn-display text-base text-[var(--cn-ink)]">
+                      {w.label}
+                    </p>
+                    <p className="mt-1 leading-relaxed text-[var(--cn-muted)]">
+                      {w.focus}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm text-[var(--cn-muted)]">
+              {pages.ninetyDayPath.assumptions}
+            </p>
+          </NinetyDayGate>
         </Section>
 
         <Section title="7-day quick wins">

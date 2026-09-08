@@ -9,6 +9,7 @@ import { generateClientReport } from "@/lib/report/generate";
 import { absoluteUrl } from "@/lib/urls";
 import { ensureReportEmailSent } from "@/lib/report-email";
 import { syncDiagnosticLeadToGhl } from "@/lib/ghl-lead";
+import { createNinetyDayUnlockCode } from "@/lib/unlock-code";
 import type { Answers, AdvisorIntel } from "@/lib/types";
 
 export async function POST(
@@ -99,6 +100,9 @@ export async function POST(
       status: "report_ready",
       report,
       advisorIntel,
+      ninetyDayUnlockCode:
+        submission.ninetyDayUnlockCode ?? createNinetyDayUnlockCode(),
+      ninetyDayUnlockedAt: null,
     });
 
     await appendEvent(id, "client_report_ready");
