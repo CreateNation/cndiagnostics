@@ -7,6 +7,7 @@ export function CheckoutStart({ cancelled }: { cancelled?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,6 +22,7 @@ export function CheckoutStart({ cancelled }: { cancelled?: boolean }) {
         body: JSON.stringify({
           email: email || undefined,
           name: name || undefined,
+          phone: phone || undefined,
         }),
       });
       const raw = await res.text();
@@ -108,6 +110,20 @@ export function CheckoutStart({ cancelled }: { cancelled?: boolean }) {
             placeholder="you@company.com"
             className="cn-input"
             autoComplete="email"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-[11px] uppercase tracking-[0.18em] text-white/45">
+            Phone
+          </span>
+          <input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+971 50 000 0000"
+            className="cn-input"
+            autoComplete="tel"
           />
         </label>
       </div>

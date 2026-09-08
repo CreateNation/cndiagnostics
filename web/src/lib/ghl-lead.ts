@@ -60,6 +60,7 @@ function buildLeadNote(input: {
     `Submission: ${input.submission.id}`,
     `Name: ${input.submission.name ?? "—"}`,
     `Email: ${input.submission.email ?? "—"}`,
+    `Phone: ${input.submission.phone ?? "—"}`,
     `Generated: ${input.report.generatedAt} (${input.report.generator})`,
     "",
     "RESULTS",

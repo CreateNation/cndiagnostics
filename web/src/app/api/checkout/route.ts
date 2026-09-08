@@ -13,16 +13,19 @@ export async function POST(req: Request) {
     const body = (await req.json().catch(() => ({}))) as {
       email?: string;
       name?: string;
+      phone?: string;
     };
 
     const submission = await createSubmission({
       email: body.email ?? null,
       name: body.name ?? null,
+      phone: body.phone?.trim() || null,
       status: "pending_payment",
     });
 
     await appendEvent(submission.id, "checkout_started", {
       email: body.email ?? null,
+      phone: body.phone ?? null,
     });
 
     if (isDevBypassPayment()) {
@@ -68,6 +71,7 @@ export async function POST(req: Request) {
       ],
       metadata: {
         submission_id: submission.id,
+        phone: body.phone?.trim() || "",
       },
       success_url: absoluteUrl(
         `/quiz/${submission.id}?session_id={CHECKOUT_SESSION_ID}`,
