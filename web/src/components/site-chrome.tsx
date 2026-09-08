@@ -9,7 +9,7 @@ export function BrandLogo({
   size?: "sm" | "md" | "lg";
 }) {
   const lightBg = tone === "light";
-  const height = size === "lg" ? 64 : size === "sm" ? 30 : 48;
+  const height = size === "lg" ? 88 : size === "sm" ? 30 : 48;
   const width = Math.round(height * 3.4);
 
   return (
@@ -33,7 +33,7 @@ export function SiteHeader({
   const light = tone === "light";
   return (
     <header className="absolute inset-x-0 top-0 z-20">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 md:py-7">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5 md:py-6">
         <Link
           href="/"
           className="opacity-95 transition duration-300 hover:opacity-100"
