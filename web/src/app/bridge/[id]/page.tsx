@@ -4,6 +4,7 @@ import { getSubmission } from "@/lib/store";
 import { bookingUrl } from "@/lib/urls";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
 import { BridgePoller } from "@/components/bridge-poller";
+import { ReportGeneratingLoader } from "@/components/report-generating-loader";
 
 export default async function BridgePage({
   params,
@@ -36,17 +37,6 @@ export default async function BridgePage({
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-20">
-        {!ready && !failed && (
-          <div className="mb-8 flex items-center gap-4">
-            <div
-              aria-hidden
-              className="h-[3px] w-24 overflow-hidden rounded-full bg-white/15"
-            >
-              <div className="h-full w-1/2 animate-pulse-soft rounded-full bg-[var(--cn-red)]" />
-            </div>
-          </div>
-        )}
-
         {ready && (
           <div
             aria-hidden
@@ -69,8 +59,10 @@ export default async function BridgePage({
             ? "Please retry from the quiz or contact us. Your answers were saved."
             : ready
               ? "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."
-              : "We’re generating your personalized growth report now. This usually takes under a minute."}
+              : "Hang tight — we’re turning your answers into a clear growth diagnosis."}
         </p>
+
+        {!ready && !failed && <ReportGeneratingLoader />}
 
         <BridgePoller
           ready={!!ready}
