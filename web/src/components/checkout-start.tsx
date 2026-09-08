@@ -23,7 +23,20 @@ export function CheckoutStart({ cancelled }: { cancelled?: boolean }) {
           name: name || undefined,
         }),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: {
+        error?: string;
+        mode?: string;
+        quizUrl?: string;
+        checkoutUrl?: string;
+      } = {};
+      try {
+        data = raw ? (JSON.parse(raw) as typeof data) : {};
+      } catch {
+        throw new Error(
+          raw?.slice(0, 180) || `Checkout failed (${res.status})`,
+        );
+      }
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
       if (data.mode === "dev_bypass" && data.quizUrl) {
