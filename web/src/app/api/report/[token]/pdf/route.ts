@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getByClientToken } from "@/lib/store";
 import { buildReportPdf, reportPdfFilename } from "@/lib/report/pdf";
+import { bookingUrl } from "@/lib/urls";
 
 export async function GET(
   _req: Request,
@@ -17,6 +18,7 @@ export async function GET(
       report: submission.report,
       scoring: submission.scoring,
       ninetyDayUnlocked: Boolean(submission.ninetyDayUnlockedAt),
+      bookingHref: bookingUrl(),
     });
     const filename = reportPdfFilename(
       submission.report.pages.cover.businessName || "report",

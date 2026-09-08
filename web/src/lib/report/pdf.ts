@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import type { ClientReport, ScoringResult } from "../types";
 import { normalizeReportPages } from "./normalize";
+import { bookingUrl } from "../urls";
 
 const DIM_LABELS: Record<string, string> = {
   audience: "Audience & Positioning",
@@ -31,13 +32,92 @@ function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
   doc.fillColor(INK);
 }
 
+function drawLockedNinetyDay(
+  doc: PDFKit.PDFDocument,
+  weeks: { label: string; focus: string }[],
+  assumptions: string,
+  bookHref: string,
+) {
+  const startY = doc.y;
+  const left = doc.page.margins.left;
+  const width =
+    doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  // Faded “blurred” preview of the real content underneath
+  doc.save();
+  doc.fillOpacity(0.22);
+  for (const week of weeks.slice(0, 3)) {
+    doc.fontSize(11).fillColor(INK).text(week.label, { paragraphGap: 2 });
+    doc.fontSize(10).fillColor(MUTED).text(week.focus, { paragraphGap: 6 });
+  }
+  if (assumptions) {
+    doc.fontSize(9).fillColor(MUTED).text(assumptions);
+  }
+  doc.restore();
+
+  const endY = Math.max(doc.y, startY + 120);
+  const boxTop = startY - 4;
+  const boxHeight = endY - startY + 8;
+
+  // Frosted overlay
+  doc
+    .save()
+    .fillColor("#f3f3f1")
+    .fillOpacity(0.82)
+    .roundedRect(left - 2, boxTop, width + 4, boxHeight, 8)
+    .fill()
+    .restore();
+
+  doc
+    .save()
+    .strokeColor(RED)
+    .lineWidth(1)
+    .roundedRect(left - 2, boxTop, width + 4, boxHeight, 8)
+    .stroke()
+    .restore();
+
+  const centerY = boxTop + boxHeight / 2 - 28;
+  doc.fillColor(RED).fontSize(10).text("LOCKED SECTION", left, centerY, {
+    width,
+    align: "center",
+  });
+  doc
+    .fillColor(INK)
+    .fontSize(14)
+    .text("Want the full 90-day path?", left, centerY + 16, {
+      width,
+      align: "center",
+    });
+  doc
+    .fillColor(MUTED)
+    .fontSize(10)
+    .text(
+      "Book a complimentary strategy call and we’ll unlock this section with a code during the call.",
+      left + 24,
+      centerY + 38,
+      { width: width - 48, align: "center" },
+    );
+
+  const ctaY = centerY + 72;
+  doc.fillColor(RED).fontSize(11).text("Book a complimentary call  →", left, ctaY, {
+    width,
+    align: "center",
+    link: bookHref,
+    underline: true,
+  });
+
+  doc.y = boxTop + boxHeight + 12;
+}
+
 export async function buildReportPdf(input: {
   report: ClientReport;
   scoring: ScoringResult | null;
   ninetyDayUnlocked?: boolean;
+  bookingHref?: string;
 }): Promise<Buffer> {
   const pages = normalizeReportPages(input.report.pages, input.scoring);
   const unlocked = Boolean(input.ninetyDayUnlocked);
+  const bookHref = input.bookingHref || bookingUrl();
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -54,7 +134,6 @@ export async function buildReportPdf(input: {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    // Cover
     doc.fillColor(RED).fontSize(11).text("CREATE NATION", { characterSpacing: 2 });
     doc
       .fillColor(INK)
@@ -127,13 +206,12 @@ export async function buildReportPdf(input: {
       }
       doc.fontSize(9).fillColor(MUTED).text(pages.ninetyDayPath.assumptions);
     } else {
-      doc
-        .fontSize(11)
-        .fillColor(MUTED)
-        .text(
-          "This section is unlocked during your complimentary strategy call. Book a call and we’ll share the access code live.",
-          { paragraphGap: 6 },
-        );
+      drawLockedNinetyDay(
+        doc,
+        pages.ninetyDayPath.weeks,
+        pages.ninetyDayPath.assumptions,
+        bookHref,
+      );
     }
 
     sectionTitle(doc, "7-day quick wins");
