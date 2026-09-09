@@ -58,7 +58,6 @@ export type Submission = {
   report: ClientReport | null;
   advisorIntel: AdvisorIntel | null;
   reportEmailSentAt: string | null;
-  internalReportEmailSentAt: string | null;
   ghlContactId: string | null;
   ghlOpportunityId: string | null;
   /** @deprecated Unlock codes removed — kept for older stored submissions */

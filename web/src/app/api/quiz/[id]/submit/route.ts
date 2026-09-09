@@ -7,7 +7,7 @@ import {
 } from "@/lib/store";
 import { generateClientReport } from "@/lib/report/generate";
 import { absoluteUrl } from "@/lib/urls";
-import { ensureInternalReportEmailSent, ensureReportEmailSent } from "@/lib/report-email";
+import { ensureReportEmailSent } from "@/lib/report-email";
 import { syncDiagnosticLeadToGhl } from "@/lib/ghl-lead";
 import type { Answers, AdvisorIntel } from "@/lib/types";
 
@@ -114,7 +114,6 @@ export async function POST(
     });
 
     const emailResult = await ensureReportEmailSent(id);
-    const internalEmail = await ensureInternalReportEmailSent(id);
 
     return NextResponse.json({
       ok: true,
@@ -124,7 +123,6 @@ export async function POST(
       stageName: scoring.stageName,
       ghl: ghlSync,
       email: emailResult,
-      internalEmail,
     });
   } catch (err) {
     console.error(err);

@@ -64,6 +64,22 @@ function buildLeadNote(input: {
     `Phone: ${input.submission.phone ?? "—"}`,
     `Generated: ${input.report.generatedAt} (${input.report.generator})`,
     "",
+    "═══ INTERNAL REPORT (full 90-day — do not send to client) ═══",
+    `Full PDF: ${input.fullPdfUrl}`,
+    `Advisor intel: ${input.advisorUrl}`,
+    "",
+    "FULL 90-DAY PATH",
+    ...pages.ninetyDayPath.weeks.map(
+      (w, i) => `${i + 1}. ${w.label}: ${w.focus}`,
+    ),
+    pages.ninetyDayPath.assumptions
+      ? `Assumptions: ${pages.ninetyDayPath.assumptions}`
+      : null,
+    "",
+    "═══ CLIENT-FACING (blurred 90-day) ═══",
+    `Client report: ${input.reportUrl}`,
+    `Client PDF: ${input.clientPdfUrl}`,
+    "",
     "RESULTS",
     `Stage: ${input.scoring.stageName}`,
     `Band: ${input.scoring.band} | CTA: ${input.scoring.cta} | Confidence: ${input.scoring.confidence}`,
@@ -71,12 +87,6 @@ function buildLeadNote(input: {
     `Spend: ${input.scoring.spend ?? "—"} | Team: ${input.scoring.team ?? "—"}`,
     `Dimensions: ${dims}`,
     `Primary bottleneck: ${pages.bottleneck.title}`,
-    "",
-    "REPORT LINKS",
-    `Client report (blurred 90-day): ${input.reportUrl}`,
-    `Client PDF (blurred 90-day): ${input.clientPdfUrl}`,
-    `Full PDF — internal (unlocked 90-day): ${input.fullPdfUrl}`,
-    `Advisor intel: ${input.advisorUrl}`,
     "",
     "QUIZ ANSWERS",
     answers,
@@ -86,14 +96,6 @@ function buildLeadNote(input: {
     `Bottleneck: ${pages.bottleneck.explanation}`,
     `Leak: ${pages.leak.diagnosis}`,
     `Next step: ${pages.nextStep.headline} — ${pages.nextStep.body}`,
-    "",
-    "FULL 90-DAY PATH (INTERNAL)",
-    ...pages.ninetyDayPath.weeks.map(
-      (w, i) => `${i + 1}. ${w.label}: ${w.focus}`,
-    ),
-    pages.ninetyDayPath.assumptions
-      ? `Assumptions: ${pages.ninetyDayPath.assumptions}`
-      : null,
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
@@ -205,6 +207,23 @@ export async function syncDiagnosticLeadToGhl(
       });
       if (noteResult.error) {
         console.error("[GHL] lead note failed", noteResult.error);
+      }
+
+      // Short pin note so the full report is easy to find on the contact.
+      const pinResult = await addGhlContactNote({
+        contactId,
+        body: [
+          "📌 FULL DIAGNOSTIC (INTERNAL — do not send to client)",
+          `Full PDF (unlocked 90-day): ${fullPdfUrl}`,
+          `Advisor intel: ${advisorUrl}`,
+          "",
+          "Client copies (blurred 90-day):",
+          `Report: ${reportUrl}`,
+          `PDF: ${clientPdfUrl}`,
+        ].join("\n"),
+      });
+      if (pinResult.error) {
+        console.error("[GHL] pin note failed", pinResult.error);
       }
 
       const opportunityName = [
