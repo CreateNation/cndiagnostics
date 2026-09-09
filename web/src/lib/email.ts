@@ -1,5 +1,6 @@
 import type { ClientReport, ScoringResult } from "./types";
 import { absoluteUrl, bookingUrl } from "./urls";
+import { normalizeReportPages } from "./report/normalize";
 import {
   isGhlApiConfigured,
   isGhlEmailConfigured,
@@ -183,5 +184,173 @@ export async function sendReportEmail(input: {
     mode: "stub",
     error:
       "GoHighLevel not configured. Set GHL_API_KEY, GHL_LOCATION_ID, and GHL_EMAIL_FROM (or GHL_WEBHOOK_URL).",
+  };
+}
+
+function buildInternalReportEmailHtml(input: {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  stageName: string;
+  bottleneck: string;
+  advisorUrl: string;
+  fullPdfUrl: string;
+  clientReportUrl: string;
+  clientPdfUrl: string;
+}): string {
+  const lead = input.name || input.email || "Lead";
+  return `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f3f3f1;font-family:Arial,Helvetica,sans-serif;color:#0e0e0e;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f3f1;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="background:#121212;padding:28px 28px 24px;">
+              <p style="margin:0;color:#e44336;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;">Internal · Create Nation</p>
+              <h1 style="margin:12px 0 0;color:#ffffff;font-size:26px;line-height:1.15;">Full diagnostic ready — ${lead}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;">
+              <p style="margin:0 0 12px;font-size:15px;line-height:1.55;">
+                <strong>Stage:</strong> ${input.stageName}<br/>
+                <strong>Bottleneck:</strong> ${input.bottleneck}<br/>
+                <strong>Email:</strong> ${input.email ?? "—"}<br/>
+                <strong>Phone:</strong> ${input.phone ?? "—"}
+              </p>
+              <p style="margin:20px 0 12px;font-size:14px;color:#667070;">
+                This PDF includes the <strong>full 90-day path</strong>. The client copy keeps that section locked.
+              </p>
+              <p style="margin:0 0 12px;">
+                <a href="${input.fullPdfUrl}" style="display:inline-block;background:#e44336;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:8px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">
+                  Download full PDF
+                </a>
+              </p>
+              <p style="margin:16px 0 0;font-size:14px;line-height:1.6;">
+                <a href="${input.advisorUrl}" style="color:#e44336;">Advisor intel</a><br/>
+                <a href="${input.clientReportUrl}" style="color:#667070;">Client report (blurred 90-day)</a><br/>
+                <a href="${input.clientPdfUrl}" style="color:#667070;">Client PDF (blurred 90-day)</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+/**
+ * Email the CNM team the unlocked (full 90-day) PDF.
+ * Requires INTERNAL_REPORT_EMAIL + GHL email config.
+ */
+export async function sendInternalReportEmail(input: {
+  submissionId: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  clientToken: string;
+  advisorToken: string;
+  scoring: ScoringResult;
+  report: ClientReport;
+}): Promise<{
+  sent: boolean;
+  mode: string;
+  skipped?: boolean;
+  error?: string;
+  to?: string;
+  contactId?: string;
+}> {
+  const to = process.env.INTERNAL_REPORT_EMAIL?.trim();
+  if (!to) {
+    return {
+      sent: false,
+      mode: "skipped",
+      skipped: true,
+      error: "INTERNAL_REPORT_EMAIL not set",
+    };
+  }
+
+  const pages = normalizeReportPages(input.report.pages, input.scoring);
+  const advisorUrl = absoluteUrl(`/advisor/${input.advisorToken}`);
+  const fullPdfUrl = absoluteUrl(`/api/advisor/${input.advisorToken}/pdf`);
+  const clientReportUrl = absoluteUrl(`/report/${input.clientToken}`);
+  const clientPdfUrl = absoluteUrl(`/api/report/${input.clientToken}/pdf`);
+  const subject = `[CNM Diagnostic] Full report — ${input.name || input.email || input.submissionId} (${input.scoring.stageName})`;
+  const html = buildInternalReportEmailHtml({
+    name: input.name,
+    email: input.email,
+    phone: input.phone,
+    stageName: input.scoring.stageName,
+    bottleneck: pages.bottleneck.title,
+    advisorUrl,
+    fullPdfUrl,
+    clientReportUrl,
+    clientPdfUrl,
+  });
+
+  if (!isGhlEmailConfigured()) {
+    console.info("[email stub] would send internal full report", {
+      to,
+      fullPdfUrl,
+      advisorUrl,
+      submissionId: input.submissionId,
+    });
+    return {
+      sent: false,
+      mode: "stub",
+      to,
+      error: "GHL email not configured for internal delivery",
+    };
+  }
+
+  const upsert = await upsertGhlContact({
+    email: to,
+    name: "CNM Diagnostic Inbox",
+    tags: ["CNM Internal Diagnostic Inbox"],
+    fields: {
+      cnm_diag_submission_id: input.submissionId,
+      cnm_diag_full_pdf_url: fullPdfUrl,
+      cnm_diag_advisor_url: advisorUrl,
+    },
+    type: "lead",
+  });
+
+  if (!upsert.contactId) {
+    return {
+      sent: false,
+      mode: "ghl_api",
+      to,
+      error: upsert.error || "Could not upsert internal GHL contact",
+    };
+  }
+
+  const email = await sendGhlEmail({
+    contactId: upsert.contactId,
+    to,
+    subject,
+    html,
+    text: `Full diagnostic PDF (unlocked 90-day): ${fullPdfUrl}\nAdvisor: ${advisorUrl}\nClient (blurred): ${clientReportUrl}`,
+    attachments: [fullPdfUrl],
+  });
+
+  if (!email.sent) {
+    return {
+      sent: false,
+      mode: "ghl_api",
+      to,
+      contactId: upsert.contactId,
+      error: email.error,
+    };
+  }
+
+  return {
+    sent: true,
+    mode: "ghl_api",
+    to,
+    contactId: upsert.contactId,
   };
 }

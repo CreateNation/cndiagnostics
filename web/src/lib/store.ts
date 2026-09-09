@@ -104,6 +104,7 @@ export async function createSubmission(
     report: partial?.report ?? null,
     advisorIntel: partial?.advisorIntel ?? null,
     reportEmailSentAt: partial?.reportEmailSentAt ?? null,
+    internalReportEmailSentAt: partial?.internalReportEmailSentAt ?? null,
     ghlContactId: partial?.ghlContactId ?? null,
     ghlOpportunityId: partial?.ghlOpportunityId ?? null,
     ninetyDayUnlockCode: partial?.ninetyDayUnlockCode ?? null,

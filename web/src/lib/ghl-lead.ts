@@ -45,7 +45,8 @@ function buildLeadNote(input: {
   scoring: ScoringResult;
   report: ClientReport;
   reportUrl: string;
-  pdfUrl: string;
+  clientPdfUrl: string;
+  fullPdfUrl: string;
   advisorUrl: string;
 }): string {
   const pages = normalizeReportPages(input.report.pages, input.scoring);
@@ -70,12 +71,12 @@ function buildLeadNote(input: {
     `Spend: ${input.scoring.spend ?? "—"} | Team: ${input.scoring.team ?? "—"}`,
     `Dimensions: ${dims}`,
     `Primary bottleneck: ${pages.bottleneck.title}`,
-    `90-day unlock code (share on call): ${input.submission.ninetyDayUnlockCode ?? "—"}`,
     "",
     "REPORT LINKS",
-    `Client report: ${input.reportUrl}`,
-    `PDF: ${input.pdfUrl}`,
-    `Advisor (internal): ${input.advisorUrl}`,
+    `Client report (blurred 90-day): ${input.reportUrl}`,
+    `Client PDF (blurred 90-day): ${input.clientPdfUrl}`,
+    `Full PDF — internal (unlocked 90-day): ${input.fullPdfUrl}`,
+    `Advisor intel: ${input.advisorUrl}`,
     "",
     "QUIZ ANSWERS",
     answers,
@@ -85,7 +86,17 @@ function buildLeadNote(input: {
     `Bottleneck: ${pages.bottleneck.explanation}`,
     `Leak: ${pages.leak.diagnosis}`,
     `Next step: ${pages.nextStep.headline} — ${pages.nextStep.body}`,
-  ].join("\n");
+    "",
+    "FULL 90-DAY PATH (INTERNAL)",
+    ...pages.ninetyDayPath.weeks.map(
+      (w, i) => `${i + 1}. ${w.label}: ${w.focus}`,
+    ),
+    pages.ninetyDayPath.assumptions
+      ? `Assumptions: ${pages.ninetyDayPath.assumptions}`
+      : null,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 }
 
 /**
@@ -116,7 +127,12 @@ export async function syncDiagnosticLeadToGhl(
 
   const scoring = submission.scoring;
   const reportUrl = absoluteUrl(`/report/${submission.clientReportToken}`);
-  const pdfUrl = absoluteUrl(`/api/report/${submission.clientReportToken}/pdf`);
+  const clientPdfUrl = absoluteUrl(
+    `/api/report/${submission.clientReportToken}/pdf`,
+  );
+  const fullPdfUrl = absoluteUrl(
+    `/api/advisor/${submission.advisorReportToken}/pdf`,
+  );
   const advisorUrl = absoluteUrl(`/advisor/${submission.advisorReportToken}`);
 
   const answersTranscript = formatAnswersTranscript(submission.answers);
@@ -127,7 +143,8 @@ export async function syncDiagnosticLeadToGhl(
       client: reportUrl,
       advisor: advisorUrl,
     }),
-    cnm_diag_pdf_url: pdfUrl,
+    cnm_diag_pdf_url: clientPdfUrl,
+    cnm_diag_full_pdf_url: fullPdfUrl,
     cnm_diag_bottleneck: pages.bottleneck.title,
     cnm_diag_industry: formatAnswerValue(
       submission.answers.Q1,
@@ -138,8 +155,9 @@ export async function syncDiagnosticLeadToGhl(
       `Stage: ${scoring.stageName}`,
       `Bottleneck: ${pages.bottleneck.title}`,
       `CTA: ${scoring.cta}`,
-      `Report: ${reportUrl}`,
-      `PDF: ${pdfUrl}`,
+      `Client report: ${reportUrl}`,
+      `Client PDF: ${clientPdfUrl}`,
+      `Full PDF (internal): ${fullPdfUrl}`,
     ].join("\n"),
   };
 
@@ -177,7 +195,8 @@ export async function syncDiagnosticLeadToGhl(
         scoring,
         report: submission.report,
         reportUrl,
-        pdfUrl,
+        clientPdfUrl,
+        fullPdfUrl,
         advisorUrl,
       });
       const noteResult = await addGhlContactNote({
@@ -223,7 +242,7 @@ export async function syncDiagnosticLeadToGhl(
     fields: {
       cnm_diag_stage: scoring.stageName,
       cnm_diag_report_url: reportUrl,
-      cnm_diag_pdf_url: pdfUrl,
+      cnm_diag_pdf_url: clientPdfUrl,
       cnm_diag_cta: scoring.cta,
       cnm_diag_submission_id: submission.id,
       cnm_diag_bottleneck: pages.bottleneck.title,

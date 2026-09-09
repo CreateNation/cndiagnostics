@@ -92,7 +92,7 @@ function drawLockedNinetyDay(
     .fillColor(MUTED)
     .fontSize(10)
     .text(
-      "Book a complimentary strategy call and we’ll unlock this section with a code during the call.",
+      "Book a complimentary strategy call and we’ll walk you through the full plan.",
       left + 24,
       centerY + 38,
       { width: width - 48, align: "center" },

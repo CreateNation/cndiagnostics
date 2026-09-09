@@ -26,6 +26,7 @@ const CLOSER_ONLY_KEYS = new Set([
   "cnm_diag_team",
   "cnm_diag_dims",
   "cnm_diag_advisor_url",
+  "cnm_diag_full_pdf_url",
 ]);
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";

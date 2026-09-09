@@ -7,9 +7,8 @@ import {
 } from "@/lib/store";
 import { generateClientReport } from "@/lib/report/generate";
 import { absoluteUrl } from "@/lib/urls";
-import { ensureReportEmailSent } from "@/lib/report-email";
+import { ensureInternalReportEmailSent, ensureReportEmailSent } from "@/lib/report-email";
 import { syncDiagnosticLeadToGhl } from "@/lib/ghl-lead";
-import { createNinetyDayUnlockCode } from "@/lib/unlock-code";
 import type { Answers, AdvisorIntel } from "@/lib/types";
 
 export async function POST(
@@ -100,9 +99,6 @@ export async function POST(
       status: "report_ready",
       report,
       advisorIntel,
-      ninetyDayUnlockCode:
-        submission.ninetyDayUnlockCode ?? createNinetyDayUnlockCode(),
-      ninetyDayUnlockedAt: null,
     });
 
     await appendEvent(id, "client_report_ready");
@@ -118,6 +114,7 @@ export async function POST(
     });
 
     const emailResult = await ensureReportEmailSent(id);
+    const internalEmail = await ensureInternalReportEmailSent(id);
 
     return NextResponse.json({
       ok: true,
@@ -127,6 +124,7 @@ export async function POST(
       stageName: scoring.stageName,
       ghl: ghlSync,
       email: emailResult,
+      internalEmail,
     });
   } catch (err) {
     console.error(err);
