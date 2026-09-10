@@ -34,36 +34,43 @@ function sectionTitle(doc: PDFKit.PDFDocument, title: string) {
 
 function drawLockedNinetyDay(
   doc: PDFKit.PDFDocument,
-  weeks: { label: string; focus: string }[],
-  assumptions: string,
+  _weeks: { label: string; focus: string }[],
+  _assumptions: string,
   bookHref: string,
 ) {
-  const startY = doc.y;
   const left = doc.page.margins.left;
   const width =
     doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const boxTop = doc.y;
+  const boxHeight = 118;
 
-  // Faded “blurred” preview of the real content underneath
-  doc.save();
-  doc.fillOpacity(0.22);
-  for (const week of weeks.slice(0, 3)) {
-    doc.fontSize(11).fillColor(INK).text(week.label, { paragraphGap: 2 });
-    doc.fontSize(10).fillColor(MUTED).text(week.focus, { paragraphGap: 6 });
-  }
-  if (assumptions) {
-    doc.fontSize(9).fillColor(MUTED).text(assumptions);
-  }
-  doc.restore();
-
-  const endY = Math.max(doc.y, startY + 120);
-  const boxTop = startY - 4;
-  const boxHeight = endY - startY + 8;
-
-  // Frosted overlay
+  // Compact frosted card — no full content underneath (avoids large empty space)
   doc
     .save()
     .fillColor("#f3f3f1")
-    .fillOpacity(0.82)
+    .roundedRect(left - 2, boxTop, width + 4, boxHeight, 8)
+    .fill()
+    .restore();
+
+  // Subtle “blurred” preview bars for texture only
+  doc.save();
+  doc.fillOpacity(0.18);
+  const barLeft = left + 28;
+  const barWidth = width - 56;
+  for (let i = 0; i < 4; i++) {
+    const y = boxTop + 18 + i * 14;
+    const w = barWidth * (i % 2 === 0 ? 0.92 : 0.72);
+    doc
+      .fillColor(MUTED)
+      .roundedRect(barLeft, y, w, 6, 2)
+      .fill();
+  }
+  doc.restore();
+
+  doc
+    .save()
+    .fillColor("#f3f3f1")
+    .fillOpacity(0.72)
     .roundedRect(left - 2, boxTop, width + 4, boxHeight, 8)
     .fill()
     .restore();
@@ -76,37 +83,39 @@ function drawLockedNinetyDay(
     .stroke()
     .restore();
 
-  const centerY = boxTop + boxHeight / 2 - 28;
-  doc.fillColor(RED).fontSize(10).text("LOCKED SECTION", left, centerY, {
+  const centerY = boxTop + 22;
+  doc.fillColor(RED).fontSize(9).text("LOCKED SECTION", left, centerY, {
     width,
     align: "center",
   });
   doc
     .fillColor(INK)
-    .fontSize(14)
+    .fontSize(13)
     .text("Want the full 90-day path?", left, centerY + 16, {
       width,
       align: "center",
     });
   doc
     .fillColor(MUTED)
-    .fontSize(10)
+    .fontSize(9)
     .text(
       "Book a complimentary strategy call and we’ll walk you through the full plan.",
-      left + 24,
-      centerY + 38,
-      { width: width - 48, align: "center" },
+      left + 36,
+      centerY + 36,
+      { width: width - 72, align: "center" },
     );
 
-  const ctaY = centerY + 72;
-  doc.fillColor(RED).fontSize(11).text("Book a complimentary call  →", left, ctaY, {
-    width,
-    align: "center",
-    link: bookHref,
-    underline: true,
-  });
+  doc
+    .fillColor(RED)
+    .fontSize(11)
+    .text("Book a complimentary call  →", left, centerY + 58, {
+      width,
+      align: "center",
+      link: bookHref,
+      underline: true,
+    });
 
-  doc.y = boxTop + boxHeight + 12;
+  doc.y = boxTop + boxHeight + 10;
 }
 
 export async function buildReportPdf(input: {
