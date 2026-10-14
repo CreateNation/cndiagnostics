@@ -35,8 +35,7 @@ export function NinetyDayGate({
             rel="noreferrer"
             className="cn-btn mt-6 w-full sm:w-auto"
           >
-            Book a complimentary call
-            <span aria-hidden>↗</span>
+            Complementary Call Included
           </a>
         </div>
       </div>
