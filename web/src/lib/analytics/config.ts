@@ -9,7 +9,7 @@ export type AnalyticsIds = {
 
 export function getAnalyticsIds(): AnalyticsIds {
   return {
-    gtmId: process.env.NEXT_PUBLIC_GTM_ID?.trim() || null,
+    gtmId: process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-K53HDXHB",
     ga4Id: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim() || null,
     googleAdsId: process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() || null,
     metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || null,
