@@ -18,29 +18,20 @@ export default async function HomePage({
         </p>
       </div>
 
-      <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-          <Link href="/" className="opacity-95 transition hover:opacity-100">
-            <BrandLogo tone="dark" size="md" />
-          </Link>
-          <a
-            href="https://create-nation.com"
-            className="cn-display text-[10px] tracking-[0.24em] text-white/50 transition hover:text-white"
-            target="_blank"
-            rel="noreferrer"
-          >
-            create-nation.com
-          </a>
-        </div>
-      </header>
-
       <main className="relative overflow-hidden">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(228,67,54,0.22),transparent_55%)]"
         />
 
-        <section className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-20 pt-12 text-center sm:pt-16">
+        <section className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-20 pt-10 text-center sm:pt-14">
+          <Link
+            href="/"
+            className="mb-10 opacity-95 transition hover:opacity-100 sm:mb-12"
+          >
+            <BrandLogo tone="dark" size="lg" />
+          </Link>
+
           <h1 className="cn-display animate-fade-up text-[1.85rem] leading-[1.08] tracking-[0.02em] text-white sm:text-4xl md:text-5xl lg:text-[3.15rem]">
             IS YOUR MARKETING LIMITING YOUR BUSINESS?
           </h1>
