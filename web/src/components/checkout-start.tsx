@@ -185,7 +185,7 @@ export function CheckoutStart({
         disabled={loading}
         className="cn-btn mt-6 w-full text-base uppercase tracking-[0.04em]"
       >
-        {loading ? "Opening checkout…" : "Start My Marketing Assessment"}
+        {loading ? "Opening checkout…" : "Get My Marketing Audit for $9"}
       </button>
 
       {error && (

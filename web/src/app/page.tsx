@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
 import { CheckoutStart } from "@/components/checkout-start";
+import { WistiaEmbed } from "@/components/wistia-player";
 
 export default async function HomePage({
   searchParams,
@@ -41,21 +42,8 @@ export default async function HomePage({
             could be losing customers to competitors.
           </p>
 
-          {/* Video placeholder — swap src when link is ready */}
           <div className="animate-fade-up-late relative mt-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-white/15 bg-[#141414] shadow-[0_0_50px_rgba(228,67,54,0.12)]">
-            <div className="relative aspect-video w-full">
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6">
-                <span
-                  aria-hidden
-                  className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[var(--cn-red)] bg-[var(--cn-red)]/15 text-2xl text-[var(--cn-red)]"
-                >
-                  ▶
-                </span>
-                <p className="cn-display text-xs tracking-[0.22em] text-white/45">
-                  Video coming soon
-                </p>
-              </div>
-            </div>
+            <WistiaEmbed />
           </div>
 
           <p className="mt-10 max-w-2xl text-base leading-relaxed text-white/68 sm:text-lg">
