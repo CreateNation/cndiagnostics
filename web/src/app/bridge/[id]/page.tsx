@@ -5,6 +5,7 @@ import { bookingUrl } from "@/lib/urls";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
 import { BridgePoller } from "@/components/bridge-poller";
 import { ReportGeneratingLoader } from "@/components/report-generating-loader";
+import { TrackedLink } from "@/components/analytics/tracked-link";
 
 export default async function BridgePage({
   params,
@@ -93,15 +94,14 @@ export default async function BridgePage({
               Your report shows where the leak is. On a short call, we walk
               through exactly how to close it.
             </p>
-            <a
+            <TrackedLink
               href={bookingUrl()}
-              target="_blank"
-              rel="noreferrer"
               className="cn-btn-ghost mt-6"
+              source="bridge"
             >
               Book your strategy call
               <span aria-hidden>↗</span>
-            </a>
+            </TrackedLink>
           </div>
         )}
 

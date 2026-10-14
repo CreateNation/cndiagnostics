@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo, Zalando_Sans } from "next/font/google";
+import { Analytics } from "@/components/analytics/analytics";
 import "./globals.css";
 
 const display = Zalando_Sans({
@@ -26,7 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full`}>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+      <body className="min-h-full flex flex-col antialiased">
+        <Analytics />
+        {children}
+      </body>
     </html>
   );
 }

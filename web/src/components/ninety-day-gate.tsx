@@ -1,5 +1,7 @@
 "use client";
 
+import { TrackedLink } from "@/components/analytics/tracked-link";
+
 export function NinetyDayGate({
   bookingHref,
   children,
@@ -29,14 +31,13 @@ export function NinetyDayGate({
             the full plan tailored to your bottleneck.
           </p>
 
-          <a
+          <TrackedLink
             href={bookingHref}
-            target="_blank"
-            rel="noreferrer"
             className="cn-btn mt-6 w-full sm:w-auto"
+            source="ninety_day_gate"
           >
             Complementary Call Included
-          </a>
+          </TrackedLink>
         </div>
       </div>
     </div>

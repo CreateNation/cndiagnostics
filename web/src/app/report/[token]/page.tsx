@@ -5,6 +5,8 @@ import { bookingUrl } from "@/lib/urls";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
 import { NinetyDayGate } from "@/components/ninety-day-gate";
 import { normalizeReportPages } from "@/lib/report/normalize";
+import { ReportViewTracker } from "@/components/analytics/report-view-tracker";
+import { TrackedLink } from "@/components/analytics/tracked-link";
 
 const DIM_LABELS: Record<string, string> = {
   audience: "Audience & Positioning",
@@ -45,6 +47,7 @@ export default async function ClientReportPage({
 
   return (
     <div className="min-h-full bg-[var(--cn-paper)]">
+      <ReportViewTracker token={token} stageName={pages.cover.stageName} />
       <header className="relative overflow-hidden bg-[var(--cn-charcoal)] text-white">
         <div aria-hidden className="cn-surface-dark pointer-events-none absolute inset-0" />
         <div
@@ -244,15 +247,14 @@ export default async function ClientReportPage({
               {pages.nextStep.body}
             </p>
             {cta === "book_call" ? (
-              <a
+              <TrackedLink
                 href={bookingUrl()}
-                target="_blank"
-                rel="noreferrer"
                 className="cn-btn mt-8 inline-flex"
+                source="report_footer"
               >
                 Book Your Consultation Call With Luay Fawaz
                 <span aria-hidden>↗</span>
-              </a>
+              </TrackedLink>
             ) : (
               <p className="mt-8 text-sm text-white/50">
                 No call CTA at this stage — nurture resources follow by email.

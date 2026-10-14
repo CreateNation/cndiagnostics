@@ -2,6 +2,7 @@ import { getSubmission } from "@/lib/store";
 import { confirmCheckoutSession } from "@/lib/confirm-checkout";
 import { QuizFlow } from "@/components/quiz-flow";
 import { BrandLogo, SiteFooter } from "@/components/site-chrome";
+import { PurchaseTracker } from "@/components/analytics/purchase-tracker";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -48,6 +49,10 @@ export default async function QuizPage({
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 md:py-16">
+        <PurchaseTracker
+          sessionId={sessionId}
+          submissionId={submission.id}
+        />
         <QuizFlow
           submissionId={submission.id}
           initialAnswers={submission.answers}

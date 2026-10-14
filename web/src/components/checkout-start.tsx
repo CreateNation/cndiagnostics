@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics/track";
+import {
+  DIAGNOSTIC_CURRENCY,
+  DIAGNOSTIC_PURCHASE_VALUE,
+} from "@/lib/analytics/config";
 
 export function CheckoutStart({
   cancelled,
@@ -21,6 +26,10 @@ export function CheckoutStart({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    track("checkout_started", {
+      email_present: Boolean(email),
+      phone_present: Boolean(phone),
+    });
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -48,6 +57,12 @@ export function CheckoutStart({
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
       if (data.mode === "dev_bypass" && data.quizUrl) {
+        track("purchase", {
+          transaction_id: `dev_${Date.now()}`,
+          value: DIAGNOSTIC_PURCHASE_VALUE,
+          currency: DIAGNOSTIC_CURRENCY,
+          mode: "dev_bypass",
+        });
         router.push(data.quizUrl.replace(/^https?:\/\/[^/]+/, ""));
         return;
       }

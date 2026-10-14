@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QUESTIONS } from "@/lib/questions";
 import type { AnswerValue, Answers } from "@/lib/types";
+import { track } from "@/lib/analytics/track";
 
 export function QuizFlow({
   submissionId,
@@ -27,6 +28,7 @@ export function QuizFlow({
   useEffect(() => {
     if (!unlocked || started) return;
     setStarted(true);
+    track("quiz_started", { submission_id: submissionId });
     void fetch(`/api/quiz/${submissionId}/event`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -95,6 +97,11 @@ export function QuizFlow({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submit failed");
+      track("quiz_completed", {
+        submission_id: submissionId,
+        stage: data.stageName,
+        cta: data.cta,
+      });
       router.push(`/bridge/${submissionId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submit failed");
