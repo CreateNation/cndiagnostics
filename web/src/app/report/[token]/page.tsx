@@ -250,7 +250,7 @@ export default async function ClientReportPage({
                 rel="noreferrer"
                 className="cn-btn mt-8 inline-flex"
               >
-                Book strategy call
+                Book Your Consultation Call With Luay Fawaz
                 <span aria-hidden>↗</span>
               </a>
             ) : (
