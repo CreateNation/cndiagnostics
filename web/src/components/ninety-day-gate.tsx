@@ -22,7 +22,7 @@ export function NinetyDayGate({
             Locked section
           </p>
           <h3 className="cn-display mt-3 text-2xl leading-tight text-[var(--cn-ink)] sm:text-3xl">
-            Want the full 90-day path?
+            Unlock your 90 days growth map.
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-[var(--cn-muted)]">
             Book a complimentary strategy call and we&apos;ll walk you through

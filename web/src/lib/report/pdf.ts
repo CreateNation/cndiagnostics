@@ -91,7 +91,7 @@ function drawLockedNinetyDay(
   doc
     .fillColor(INK)
     .fontSize(13)
-    .text("Want the full 90-day path?", left, centerY + 16, {
+    .text("Unlock your 90 days growth map.", left, centerY + 16, {
       width,
       align: "center",
     });
