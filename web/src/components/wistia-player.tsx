@@ -28,6 +28,8 @@ export function WistiaEmbed() {
       {createElement("wistia-player", {
         "media-id": MEDIA_ID,
         aspect: "1.7777777777777777",
+        autoplay: true,
+        "silent-autoplay": "allow",
         className: "block w-full",
       })}
     </>
