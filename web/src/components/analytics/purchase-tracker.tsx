@@ -7,18 +7,24 @@ import {
   DIAGNOSTIC_PURCHASE_VALUE,
 } from "@/lib/analytics/config";
 
-/** Fires once when user lands on quiz after Stripe checkout (`session_id` present). */
+/**
+ * Fires `purchase` once after Stripe payment is server-verified.
+ * `transaction_id` is the Stripe Checkout Session ID (stable for dedupe).
+ */
 export function PurchaseTracker({
   sessionId,
   submissionId,
+  paid,
 }: {
   sessionId?: string | null;
   submissionId: string;
+  /** True only after confirmCheckoutSession / paid status */
+  paid: boolean;
 }) {
   const fired = useRef(false);
 
   useEffect(() => {
-    if (!sessionId || fired.current) return;
+    if (!sessionId || !paid || fired.current) return;
     const key = `cnm_purchase_${sessionId}`;
     try {
       if (sessionStorage.getItem(key)) return;
@@ -33,7 +39,7 @@ export function PurchaseTracker({
       value: DIAGNOSTIC_PURCHASE_VALUE,
       currency: DIAGNOSTIC_CURRENCY,
     });
-  }, [sessionId, submissionId]);
+  }, [sessionId, submissionId, paid]);
 
   return null;
 }

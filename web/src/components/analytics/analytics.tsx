@@ -82,8 +82,8 @@ export function Analytics() {
         `}</Script>
       ) : null}
 
-      {/* Meta Pixel */}
-      {ids.metaPixelId ? (
+      {/* Meta Pixel — only when GTM is absent. Prefer GTM as sole Meta sender. */}
+      {ids.metaPixelId && !ids.gtmId ? (
         <Script id="meta-pixel" strategy="afterInteractive">{`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

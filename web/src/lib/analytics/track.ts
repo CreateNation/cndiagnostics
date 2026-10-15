@@ -30,16 +30,6 @@ function gtagEvent(name: string, payload?: TrackPayload) {
   window.gtag("event", name, payload ?? {});
 }
 
-function metaEvent(name: string, payload?: TrackPayload) {
-  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
-  window.fbq("track", name, payload ?? {});
-}
-
-function metaCustom(name: string, payload?: TrackPayload) {
-  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
-  window.fbq("trackCustom", name, payload ?? {});
-}
-
 function tiktokEvent(name: string, payload?: TrackPayload) {
   if (typeof window === "undefined" || !window.ttq?.track) return;
   window.ttq.track(name, payload ?? {});
@@ -83,6 +73,10 @@ export function getAttribution(): Record<string, string> {
   }
 }
 
+/**
+ * Page views → dataLayer for GTM.
+ * Native Meta PageView is intentionally omitted (GTM owns Meta).
+ */
 export function trackPageView(path: string): void {
   const ids = getAnalyticsIds();
   const payload = { page_path: path, page_location: window.location.href };
@@ -97,10 +91,6 @@ export function trackPageView(path: string): void {
     });
   }
 
-  if (ids.metaPixelId) {
-    metaEvent("PageView");
-  }
-
   if (ids.tiktokPixelId) {
     window.ttq?.page?.();
   }
@@ -108,7 +98,8 @@ export function trackPageView(path: string): void {
 
 /**
  * Funnel / marketing events.
- * Fires to GTM dataLayer + native Meta / GA4 / TikTok when configured.
+ * Always push to dataLayer for GTM. Meta is GTM-only (no direct fbq).
+ * Optional native gtag / TikTok / LinkedIn when env IDs are set without GTM Meta.
  */
 export function track(event: string, payload: TrackPayload = {}): void {
   const ids = getAnalyticsIds();
@@ -118,15 +109,16 @@ export function track(event: string, payload: TrackPayload = {}): void {
 
   switch (event) {
     case "checkout_started":
-      metaEvent("InitiateCheckout", {
-        value: DIAGNOSTIC_PURCHASE_VALUE,
-        currency: DIAGNOSTIC_CURRENCY,
-        content_name: "CNM Growth Diagnostic",
-      });
       gtagEvent("begin_checkout", {
         currency: DIAGNOSTIC_CURRENCY,
         value: DIAGNOSTIC_PURCHASE_VALUE,
-        items: [{ item_name: "CNM Growth Diagnostic", price: DIAGNOSTIC_PURCHASE_VALUE, quantity: 1 }],
+        items: [
+          {
+            item_name: "CNM Growth Diagnostic",
+            price: DIAGNOSTIC_PURCHASE_VALUE,
+            quantity: 1,
+          },
+        ],
       });
       tiktokEvent("InitiateCheckout", {
         value: DIAGNOSTIC_PURCHASE_VALUE,
@@ -135,17 +127,17 @@ export function track(event: string, payload: TrackPayload = {}): void {
       break;
 
     case "purchase":
-      metaEvent("Purchase", {
-        value: Number(enriched.value ?? DIAGNOSTIC_PURCHASE_VALUE),
-        currency: DIAGNOSTIC_CURRENCY,
-        content_name: "CNM Growth Diagnostic",
-        content_type: "product",
-      });
       gtagEvent("purchase", {
         transaction_id: String(enriched.transaction_id ?? ""),
         value: Number(enriched.value ?? DIAGNOSTIC_PURCHASE_VALUE),
         currency: DIAGNOSTIC_CURRENCY,
-        items: [{ item_name: "CNM Growth Diagnostic", price: DIAGNOSTIC_PURCHASE_VALUE, quantity: 1 }],
+        items: [
+          {
+            item_name: "CNM Growth Diagnostic",
+            price: DIAGNOSTIC_PURCHASE_VALUE,
+            quantity: 1,
+          },
+        ],
       });
       if (ids.googleAdsId && process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL) {
         gtagEvent("conversion", {
@@ -162,18 +154,11 @@ export function track(event: string, payload: TrackPayload = {}): void {
       break;
 
     case "quiz_started":
-      metaCustom("QuizStarted", enriched);
       gtagEvent("quiz_started", enriched);
       tiktokEvent("ViewContent", { content_name: "Diagnostic Quiz" });
       break;
 
     case "quiz_completed":
-      metaEvent("Lead", {
-        content_name: "Diagnostic Quiz Completed",
-        value: DIAGNOSTIC_PURCHASE_VALUE,
-        currency: DIAGNOSTIC_CURRENCY,
-      });
-      metaCustom("QuizCompleted", enriched);
       gtagEvent("generate_lead", {
         currency: DIAGNOSTIC_CURRENCY,
         value: DIAGNOSTIC_PURCHASE_VALUE,
@@ -183,16 +168,12 @@ export function track(event: string, payload: TrackPayload = {}): void {
       break;
 
     case "report_viewed":
-      metaCustom("ReportViewed", enriched);
       gtagEvent("report_viewed", enriched);
       tiktokEvent("ViewContent", { content_name: "Client Report" });
       break;
 
+    // Click intent only — map in GTM to a custom event, not Meta Schedule.
     case "book_call_clicked":
-      metaEvent("Schedule", {
-        content_name: String(enriched.source ?? "book_call"),
-      });
-      metaCustom("BookCallClicked", enriched);
       gtagEvent("book_call_clicked", enriched);
       if (ids.googleAdsId && process.env.NEXT_PUBLIC_GOOGLE_ADS_BOOK_CALL_LABEL) {
         gtagEvent("conversion", {
@@ -200,7 +181,10 @@ export function track(event: string, payload: TrackPayload = {}): void {
         });
       }
       tiktokEvent("Contact", { content_name: "Book Consultation" });
-      if (typeof window.lintrk === "function" && process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID) {
+      if (
+        typeof window.lintrk === "function" &&
+        process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID
+      ) {
         window.lintrk("track", {
           conversion_id: process.env.NEXT_PUBLIC_LINKEDIN_CONVERSION_ID,
         });
@@ -208,7 +192,6 @@ export function track(event: string, payload: TrackPayload = {}): void {
       break;
 
     default:
-      metaCustom(event, enriched);
       gtagEvent(event, enriched);
       break;
   }

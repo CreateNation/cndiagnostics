@@ -50,8 +50,9 @@ export default async function QuizPage({
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 md:py-16">
         <PurchaseTracker
-          sessionId={sessionId}
+          sessionId={sessionId ?? submission.stripeSessionId}
           submissionId={submission.id}
+          paid={unlocked}
         />
         <QuizFlow
           submissionId={submission.id}
