@@ -24,10 +24,21 @@ export function CheckoutStart({
 
   async function startCheckout(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError("Work email is required.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid work email.");
+      return;
+    }
+
+    setLoading(true);
     track("checkout_started", {
-      email_present: Boolean(email),
+      email_present: true,
       phone_present: Boolean(phone),
     });
     try {
@@ -35,7 +46,7 @@ export function CheckoutStart({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email || undefined,
+          email: trimmedEmail,
           name: name || undefined,
           phone: phone || undefined,
         }),
@@ -148,7 +159,7 @@ export function CheckoutStart({
               card ? "text-[var(--cn-muted)]" : "text-white/45"
             }`}
           >
-            Work email
+            Work email <span className="normal-case tracking-normal">(required)</span>
           </span>
           <input
             id="email"
@@ -158,6 +169,8 @@ export function CheckoutStart({
             placeholder="you@company.com"
             className={card ? "cn-input-light" : "cn-input"}
             autoComplete="email"
+            required
+            aria-required="true"
           />
         </label>
         <label className="block">

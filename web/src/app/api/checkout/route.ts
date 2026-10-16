@@ -27,23 +27,28 @@ export async function POST(req: Request) {
       phone?: string;
     };
     const origin = requestOrigin(req);
+    const email = body.email?.trim() || "";
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "A valid work email is required" },
+        { status: 400 },
+      );
+    }
 
     const submission = await createSubmission({
-      email: body.email ?? null,
+      email,
       name: body.name ?? null,
       phone: body.phone?.trim() || null,
       status: "pending_payment",
     });
 
     await appendEvent(submission.id, "checkout_started", {
-      email: body.email ?? null,
+      email,
       phone: body.phone ?? null,
     });
 
     // Form submitted → GHL New Lead opportunity (before Stripe redirect).
-    if (submission.email) {
-      await syncCheckoutLeadToGhl(submission);
-    }
+    await syncCheckoutLeadToGhl(submission);
 
     if (isDevBypassPayment()) {
       const paid = await updateSubmission(submission.id, {
