@@ -13,10 +13,12 @@ import {
   buildGhlFields,
   fireGhlWebhook,
   isGhlApiConfigured,
+  resolvePaidPipelineStageId,
   upsertGhlContact,
   upsertGhlOpportunity,
 } from "./ghl";
 import { updateSubmission } from "./store";
+import { DIAGNOSTIC_PURCHASE_VALUE } from "./analytics/config";
 
 function formatAnswerValue(
   value: AnswerValue | undefined,
@@ -99,6 +101,97 @@ function buildLeadNote(input: {
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+/**
+ * On payment: upsert contact + create/open pipeline opportunity (not contact-only).
+ * Idempotent via stored ghlOpportunityId.
+ */
+export async function syncPaidDiagnosticToGhl(
+  submission: Submission,
+): Promise<{
+  contactId: string | null;
+  opportunityId: string | null;
+  error?: string;
+}> {
+  if (!submission.email) {
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "Email required for GHL opportunity",
+    };
+  }
+  if (!isGhlApiConfigured()) {
+    await fireGhlWebhook({
+      event: "purchase_completed",
+      submission_id: submission.id,
+      email: submission.email,
+      name: submission.name,
+      fields: { cnm_diag_submission_id: submission.id },
+      contactFacingSafe: true,
+    });
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "GHL API not configured",
+    };
+  }
+
+  let contactId: string | null = submission.ghlContactId;
+  let opportunityId: string | null = submission.ghlOpportunityId;
+  let error: string | undefined;
+
+  const upsert = await upsertGhlContact({
+    email: submission.email,
+    name: submission.name,
+    phone: submission.phone,
+    tags: ["Paid - Diagnostic", "CNM Diagnostic Lead"],
+    fields: { cnm_diag_submission_id: submission.id },
+    type: "lead",
+  });
+  contactId = upsert.contactId ?? contactId;
+  if (upsert.error) {
+    error = upsert.error;
+    console.error("[GHL] paid contact upsert failed", upsert.error);
+  }
+
+  if (contactId) {
+    const opportunityName = [
+      submission.name || submission.email,
+      "—",
+      "CNM Diagnostic",
+      "($9 paid)",
+    ].join(" ");
+
+    const opportunity = await upsertGhlOpportunity({
+      contactId,
+      name: opportunityName,
+      pipelineStageId: resolvePaidPipelineStageId(),
+      existingOpportunityId: opportunityId,
+      monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
+    });
+    opportunityId = opportunity.opportunityId ?? opportunityId;
+    if (opportunity.error) {
+      error = error ? `${error}; ${opportunity.error}` : opportunity.error;
+      console.error("[GHL] paid opportunity sync failed", opportunity.error);
+    }
+  }
+
+  await updateSubmission(submission.id, {
+    ghlContactId: contactId,
+    ghlOpportunityId: opportunityId,
+  });
+
+  await fireGhlWebhook({
+    event: "purchase_completed",
+    submission_id: submission.id,
+    email: submission.email,
+    name: submission.name,
+    fields: { cnm_diag_submission_id: submission.id },
+    contactFacingSafe: true,
+  });
+
+  return { contactId, opportunityId, error };
 }
 
 /**

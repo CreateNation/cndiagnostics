@@ -5,7 +5,7 @@ import {
   getSubmission,
   updateSubmission,
 } from "@/lib/store";
-import { pushToGhl } from "@/lib/ghl";
+import { syncPaidDiagnosticToGhl } from "@/lib/ghl-lead";
 import type { Submission } from "@/lib/types";
 
 const PAID_STATUSES = new Set([
@@ -56,14 +56,7 @@ export async function confirmCheckoutSession(
     mode: "checkout_redirect",
   });
 
-  await pushToGhl({
-    event: "purchase_completed",
-    submission_id: submissionId,
-    email: updated.email,
-    name: updated.name,
-    fields: { cnm_diag_submission_id: submissionId },
-    contactFacingSafe: true,
-  });
+  await syncPaidDiagnosticToGhl(updated);
 
-  return updated;
+  return (await getSubmission(submissionId)) ?? updated;
 }

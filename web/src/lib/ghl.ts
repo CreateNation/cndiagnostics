@@ -256,16 +256,30 @@ function resolvePipelineStageId(cta: ScoringResult["cta"]): string | null {
   return process.env.GHL_STAGE_REPORT_READY || null;
 }
 
+/** Stage for paid / quiz-in-progress opportunities (before report). */
+export function resolvePaidPipelineStageId(): string | null {
+  return (
+    process.env.GHL_STAGE_PAID?.trim() ||
+    process.env.GHL_STAGE_REPORT_READY?.trim() ||
+    null
+  );
+}
+
 export async function upsertGhlOpportunity(input: {
   contactId: string;
   name: string;
-  cta: ScoringResult["cta"];
+  cta?: ScoringResult["cta"];
+  /** Explicit stage override (e.g. paid / quiz pending). */
+  pipelineStageId?: string | null;
   existingOpportunityId?: string | null;
   monetaryValue?: number;
 }): Promise<{ opportunityId: string | null; error?: string }> {
   const locationId = process.env.GHL_LOCATION_ID;
   const pipelineId = process.env.GHL_PIPELINE_ID;
-  const pipelineStageId = resolvePipelineStageId(input.cta);
+  const pipelineStageId =
+    input.pipelineStageId?.trim() ||
+    (input.cta ? resolvePipelineStageId(input.cta) : null) ||
+    resolvePaidPipelineStageId();
 
   if (!locationId) {
     return { opportunityId: null, error: "GHL_LOCATION_ID missing" };
@@ -274,7 +288,7 @@ export async function upsertGhlOpportunity(input: {
     return {
       opportunityId: null,
       error:
-        "Set GHL_PIPELINE_ID and GHL_STAGE_REPORT_READY (optional: GHL_STAGE_BOOK_CALL, GHL_STAGE_NURTURE)",
+        "Set GHL_PIPELINE_ID and GHL_STAGE_PAID (or GHL_STAGE_REPORT_READY; optional: GHL_STAGE_BOOK_CALL, GHL_STAGE_NURTURE)",
     };
   }
 

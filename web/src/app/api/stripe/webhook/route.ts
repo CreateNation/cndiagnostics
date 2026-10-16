@@ -7,7 +7,7 @@ import {
   getSubmission,
   updateSubmission,
 } from "@/lib/store";
-import { pushToGhl } from "@/lib/ghl";
+import { syncPaidDiagnosticToGhl } from "@/lib/ghl-lead";
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -42,7 +42,15 @@ export async function POST(req: Request) {
     };
 
     const existing = await getByStripeSession(session.id);
-    if (existing?.status === "report_ready" || existing?.status === "paid") {
+    if (existing?.status === "report_ready") {
+      return NextResponse.json({ ok: true, idempotent: true });
+    }
+
+    // Already marked paid (e.g. success redirect) — still ensure opportunity exists.
+    if (existing?.status === "paid") {
+      if (!existing.ghlOpportunityId) {
+        await syncPaidDiagnosticToGhl(existing);
+      }
       return NextResponse.json({ ok: true, idempotent: true });
     }
 
@@ -55,7 +63,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Submission not found" }, { status: 404 });
     }
 
-    await updateSubmission(submission.id, {
+    const updated = await updateSubmission(submission.id, {
       status: "paid",
       stripeSessionId: session.id,
       email: session.customer_details?.email ?? submission.email,
@@ -65,16 +73,7 @@ export async function POST(req: Request) {
     });
     await appendEvent(submission.id, "purchase_completed");
 
-    await pushToGhl({
-      event: "purchase_completed",
-      submission_id: submission.id,
-      email: session.customer_details?.email ?? submission.email,
-      name: session.customer_details?.name ?? submission.name,
-      fields: {
-        cnm_diag_submission_id: submission.id,
-      },
-      contactFacingSafe: true,
-    });
+    await syncPaidDiagnosticToGhl(updated);
   }
 
   return NextResponse.json({ ok: true });
