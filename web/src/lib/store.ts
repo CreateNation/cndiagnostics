@@ -98,7 +98,7 @@ export async function createSubmission(
     phone: partial?.phone ?? null,
     clientUserAgent: partial?.clientUserAgent ?? null,
     clientEventSourceUrl: partial?.clientEventSourceUrl ?? null,
-    stripeSessionId: partial?.stripeSessionId ?? null;
+    stripeSessionId: partial?.stripeSessionId ?? null,
     answers: partial?.answers ?? {},
     scoring: partial?.scoring ?? null,
     clientReportToken: partial?.clientReportToken ?? null,
