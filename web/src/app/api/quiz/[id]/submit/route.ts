@@ -5,12 +5,13 @@ import {
   getSubmission,
   updateSubmission,
 } from "@/lib/store";
-import { generateClientReport } from "@/lib/report/generate";
 import { absoluteUrl } from "@/lib/urls";
-import { ensureReportEmailSent } from "@/lib/report-email";
-import { syncDiagnosticLeadToGhl } from "@/lib/ghl-lead";
-import type { Answers, AdvisorIntel } from "@/lib/types";
+import type { Answers } from "@/lib/types";
 
+/**
+ * Saves answers + scoring, marks report_generating, returns bridge URL quickly.
+ * Heavy AI work runs on /api/quiz/[id]/generate (kicked from the bridge page).
+ */
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -25,20 +26,35 @@ export async function POST(
     submission.status !== "paid" &&
     submission.status !== "quiz_in_progress" &&
     submission.status !== "quiz_completed" &&
-    submission.status !== "report_failed"
+    submission.status !== "report_failed" &&
+    submission.status !== "report_generating"
   ) {
     if (submission.status === "report_ready" && submission.report) {
       return NextResponse.json({
         ok: true,
         idempotent: true,
+        generating: false,
         bridgeUrl: absoluteUrl(`/bridge/${submission.id}`),
         reportUrl: absoluteUrl(`/report/${submission.clientReportToken}`),
+        cta: submission.scoring?.cta,
+        stageName: submission.scoring?.stageName,
       });
     }
     return NextResponse.json(
       { error: "Submission is not unlocked for quiz" },
       { status: 402 },
     );
+  }
+
+  // Already generating — send them to the bridge progress UI.
+  if (submission.status === "report_generating" && submission.scoring) {
+    return NextResponse.json({
+      ok: true,
+      generating: true,
+      bridgeUrl: absoluteUrl(`/bridge/${id}`),
+      cta: submission.scoring.cta,
+      stageName: submission.scoring.stageName,
+    });
   }
 
   const body = (await req.json()) as { answers: Answers };
@@ -74,65 +90,11 @@ export async function POST(
   await appendEvent(id, "report_generation_started");
   await updateSubmission(id, { status: "report_generating" });
 
-  try {
-    const report = await generateClientReport({
-      answers,
-      scoring,
-      name: submission.name,
-      email: String(answers.Q25),
-    });
-
-    const advisorIntel: AdvisorIntel = {
-      band: scoring.band,
-      urgency: scoring.urgency,
-      objection: scoring.objection,
-      spend: scoring.spend,
-      team: scoring.team,
-      activities: scoring.activities,
-      confidence: scoring.confidence,
-      rawAnswers: answers,
-      flags: scoring.flags,
-      contradictions: scoring.contradictions,
-    };
-
-    const ready = await updateSubmission(id, {
-      status: "report_ready",
-      report,
-      advisorIntel,
-    });
-
-    await appendEvent(id, "client_report_ready");
-    await appendEvent(id, "advisor_report_ready");
-
-    const clientUrl = absoluteUrl(`/report/${ready.clientReportToken}`);
-
-    const ghlSync = await syncDiagnosticLeadToGhl(ready);
-    await appendEvent(id, "ghl_lead_synced", {
-      contactId: ghlSync.contactId,
-      opportunityId: ghlSync.opportunityId,
-      error: ghlSync.error ?? null,
-    });
-
-    const emailResult = await ensureReportEmailSent(id);
-
-    return NextResponse.json({
-      ok: true,
-      bridgeUrl: absoluteUrl(`/bridge/${id}`),
-      reportUrl: clientUrl,
-      cta: scoring.cta,
-      stageName: scoring.stageName,
-      ghl: ghlSync,
-      email: emailResult,
-    });
-  } catch (err) {
-    console.error(err);
-    await updateSubmission(id, { status: "report_failed" });
-    await appendEvent(id, "report_generation_failed", {
-      message: err instanceof Error ? err.message : "unknown",
-    });
-    return NextResponse.json(
-      { error: "Report generation failed" },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+    generating: true,
+    bridgeUrl: absoluteUrl(`/bridge/${id}`),
+    cta: scoring.cta,
+    stageName: scoring.stageName,
+  });
 }

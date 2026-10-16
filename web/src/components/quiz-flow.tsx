@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { QUESTIONS } from "@/lib/questions";
 import type { AnswerValue, Answers } from "@/lib/types";
 import { track } from "@/lib/analytics/track";
+import { ReportGeneratingLoader } from "@/components/report-generating-loader";
 
 export function QuizFlow({
   submissionId,
@@ -102,6 +103,7 @@ export function QuizFlow({
         stage: data.stageName,
         cta: data.cta,
       });
+      // Bridge shows the progress bar while /generate runs.
       router.push(`/bridge/${submissionId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submit failed");
@@ -137,6 +139,26 @@ export function QuizFlow({
           Back to start
           <span aria-hidden>↗</span>
         </a>
+      </div>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-2 py-10 text-center">
+        <p className="cn-display text-xs tracking-[0.24em] text-[var(--cn-red)]">
+          Almost there
+        </p>
+        <h1 className="cn-display mt-3 text-3xl text-[var(--cn-ink)] sm:text-4xl">
+          Building your diagnosis
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-[var(--cn-muted)]">
+          This can take up to a minute. Please keep this tab open — you&apos;ll
+          see a progress bar while we work.
+        </p>
+        <div className="flex justify-center">
+          <ReportGeneratingLoader tone="light" />
+        </div>
       </div>
     );
   }

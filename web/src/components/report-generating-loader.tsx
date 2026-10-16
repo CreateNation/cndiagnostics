@@ -14,9 +14,13 @@ const STEPS = [
   "Polishing the diagnosis",
 ];
 
-export function ReportGeneratingLoader() {
+export function ReportGeneratingLoader({
+  tone = "dark",
+}: {
+  tone?: "dark" | "light";
+}) {
   const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(8);
+  const [progress, setProgress] = useState(6);
 
   useEffect(() => {
     const stepTimer = setInterval(() => {
@@ -28,43 +32,53 @@ export function ReportGeneratingLoader() {
   useEffect(() => {
     const progressTimer = setInterval(() => {
       setProgress((p) => {
-        if (p >= 92) return 92;
-        const bump = p < 40 ? 2.4 : p < 70 ? 1.4 : 0.55;
-        return Math.min(92, p + bump);
+        if (p >= 94) return 94;
+        const bump = p < 35 ? 2.8 : p < 65 ? 1.6 : p < 85 ? 0.7 : 0.25;
+        return Math.min(94, p + bump);
       });
-    }, 400);
+    }, 350);
     return () => clearInterval(progressTimer);
   }, []);
+
+  const light = tone === "light";
+  const trackBg = light ? "bg-[var(--cn-line)]" : "bg-white/12";
+  const stepColor = light ? "text-[var(--cn-ink)]" : "text-white/85";
+  const metaColor = light ? "text-[var(--cn-muted)]" : "text-white/40";
+  const pctColor = light ? "text-[var(--cn-ink)]" : "text-white/70";
 
   return (
     <div
       className="mt-10 animate-fade-up-late"
       role="status"
       aria-live="polite"
-      aria-label="Generating your report"
+      aria-busy="true"
+      aria-label={`Generating your report, ${Math.round(progress)} percent`}
     >
       <div className="relative mx-auto h-44 w-44 sm:h-52 sm:w-52">
-        {/* Outer glow */}
         <div
           aria-hidden
           className="absolute inset-6 rounded-full bg-[var(--cn-red)]/15 blur-2xl animate-pulse-soft"
         />
 
-        {/* Rings */}
         <div
           aria-hidden
-          className="absolute inset-0 rounded-full border border-white/10"
+          className={`absolute inset-0 rounded-full border ${
+            light ? "border-[var(--cn-line)]" : "border-white/10"
+          }`}
         />
         <div
           aria-hidden
-          className="absolute inset-[14%] rounded-full border border-dashed border-white/18 cn-loader-spin-slow"
+          className={`absolute inset-[14%] rounded-full border border-dashed cn-loader-spin-slow ${
+            light ? "border-[var(--cn-ink)]/20" : "border-white/18"
+          }`}
         />
         <div
           aria-hidden
-          className="absolute inset-[28%] rounded-full border border-white/12"
+          className={`absolute inset-[28%] rounded-full border ${
+            light ? "border-[var(--cn-line)]" : "border-white/12"
+          }`}
         />
 
-        {/* Sweep arc */}
         <div
           aria-hidden
           className="absolute inset-0 cn-loader-spin"
@@ -79,7 +93,6 @@ export function ReportGeneratingLoader() {
           }}
         />
 
-        {/* Orbiting ticks */}
         {[0, 72, 144, 216, 288].map((deg) => (
           <span
             key={deg}
@@ -94,36 +107,44 @@ export function ReportGeneratingLoader() {
           />
         ))}
 
-        {/* Core */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-[var(--cn-red)]/50 bg-[var(--cn-charcoal)] shadow-[0_0_40px_color-mix(in_srgb,var(--cn-red)_35%,transparent)] sm:h-[4.5rem] sm:w-[4.5rem]">
+          <div
+            className={`relative flex h-16 w-16 flex-col items-center justify-center rounded-full border border-[var(--cn-red)]/50 shadow-[0_0_40px_color-mix(in_srgb,var(--cn-red)_35%,transparent)] sm:h-[4.5rem] sm:w-[4.5rem] ${
+              light ? "bg-white" : "bg-[var(--cn-charcoal)]"
+            }`}
+          >
             <span
               aria-hidden
               className="absolute inset-2 rounded-full border border-[var(--cn-red)]/30 animate-pulse-soft"
             />
-            <span className="cn-display text-[11px] tracking-[0.28em] text-[var(--cn-red)]">
-              CN
+            <span className={`cn-display text-lg tracking-tight ${pctColor}`}>
+              {Math.round(progress)}
+              <span className="text-[10px]">%</span>
             </span>
           </div>
         </div>
       </div>
 
       <div className="mt-8 max-w-md">
-        <p className="cn-display min-h-[1.5rem] text-sm tracking-[0.12em] text-white/85 transition-opacity duration-500">
+        <p
+          className={`cn-display min-h-[1.5rem] text-sm tracking-[0.12em] transition-opacity duration-500 ${stepColor}`}
+        >
           {STEPS[step]}
           <span className="cn-loader-dots text-[var(--cn-red)]" aria-hidden>
             …
           </span>
         </p>
 
-        <div className="mt-5 h-[3px] overflow-hidden rounded-full bg-white/12">
+        <div className={`mt-5 h-2 overflow-hidden rounded-full ${trackBg}`}>
           <div
             className="h-full rounded-full bg-[var(--cn-red)] transition-[width] duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="mt-3 text-xs tracking-[0.16em] text-white/40 uppercase">
-          Building your diagnosis · usually under a minute
+        <p
+          className={`mt-3 text-xs uppercase tracking-[0.16em] ${metaColor}`}
+        >
+          Building your diagnosis · usually under a minute — please keep this tab open
         </p>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function BridgePoller({
@@ -17,14 +17,29 @@ export function BridgePoller({
   emailAlreadySent: boolean;
 }) {
   const router = useRouter();
+  const generateStarted = useRef(false);
   const [emailStatus, setEmailStatus] = useState<
     "idle" | "sending" | "sent" | "failed"
   >(emailAlreadySent ? "sent" : "idle");
   const [emailError, setEmailError] = useState<string | null>(null);
 
+  // Kick off AI generation once; bridge shows the progress bar meanwhile.
+  useEffect(() => {
+    if (ready || failed || generateStarted.current) return;
+    generateStarted.current = true;
+
+    void fetch(`/api/quiz/${submissionId}/generate`, {
+      method: "POST",
+    })
+      .then(() => router.refresh())
+      .catch(() => {
+        // Polling below will surface report_failed if generation dies.
+      });
+  }, [ready, failed, submissionId, router]);
+
   useEffect(() => {
     if (ready || failed) return;
-    const id = setInterval(() => router.refresh(), 2500);
+    const id = setInterval(() => router.refresh(), 2000);
     return () => clearInterval(id);
   }, [ready, failed, router]);
 
@@ -69,7 +84,10 @@ export function BridgePoller({
   return (
     <div className="mt-6 max-w-xl animate-fade-up-late text-sm leading-relaxed text-white/60">
       {emailStatus === "sending" && (
-        <p>Sending a copy of your report to <span className="text-white">{email}</span>…</p>
+        <p>
+          Sending a copy of your report to{" "}
+          <span className="text-white">{email}</span>…
+        </p>
       )}
       {emailStatus === "sent" && (
         <p>
