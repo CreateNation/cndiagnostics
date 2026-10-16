@@ -7,6 +7,7 @@ import {
   getStripePriceId,
   isDevBypassPayment,
 } from "@/lib/stripe";
+import { syncCheckoutLeadToGhl } from "@/lib/ghl-lead";
 import { absoluteUrl } from "@/lib/urls";
 import type Stripe from "stripe";
 
@@ -38,6 +39,11 @@ export async function POST(req: Request) {
       email: body.email ?? null,
       phone: body.phone ?? null,
     });
+
+    // Form submitted → GHL New Lead opportunity (before Stripe redirect).
+    if (submission.email) {
+      await syncCheckoutLeadToGhl(submission);
+    }
 
     if (isDevBypassPayment()) {
       const paid = await updateSubmission(submission.id, {

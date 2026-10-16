@@ -246,23 +246,28 @@ export async function listGhlPipelines(): Promise<{
   };
 }
 
-function resolvePipelineStageId(cta: ScoringResult["cta"]): string | null {
-  if (cta === "book_call" && process.env.GHL_STAGE_BOOK_CALL) {
-    return process.env.GHL_STAGE_BOOK_CALL;
-  }
-  if (cta === "email_nurture" && process.env.GHL_STAGE_NURTURE) {
-    return process.env.GHL_STAGE_NURTURE;
-  }
-  return process.env.GHL_STAGE_REPORT_READY || null;
+/** Form submitted — first pipeline stage ("New Lead"). */
+export function resolveNewLeadStageId(): string | null {
+  return process.env.GHL_STAGE_NEW_LEAD?.trim() || null;
 }
 
-/** Stage for paid / quiz-in-progress opportunities (before report). */
-export function resolvePaidPipelineStageId(): string | null {
-  return (
-    process.env.GHL_STAGE_PAID?.trim() ||
-    process.env.GHL_STAGE_REPORT_READY?.trim() ||
-    null
-  );
+/** Quiz + report complete. */
+export function resolveReportReadyStageId(): string | null {
+  return process.env.GHL_STAGE_REPORT_READY?.trim() || null;
+}
+
+/** Lead clicked / booked a strategy call. */
+export function resolveBookCallStageId(): string | null {
+  return process.env.GHL_STAGE_BOOK_CALL?.trim() || null;
+}
+
+/** @deprecated Prefer explicit stage helpers above. */
+function resolvePipelineStageId(cta: ScoringResult["cta"]): string | null {
+  if (cta === "book_call") return resolveBookCallStageId();
+  if (cta === "email_nurture" && process.env.GHL_STAGE_NURTURE) {
+    return process.env.GHL_STAGE_NURTURE.trim();
+  }
+  return resolveReportReadyStageId();
 }
 
 export async function upsertGhlOpportunity(input: {
@@ -279,7 +284,8 @@ export async function upsertGhlOpportunity(input: {
   const pipelineStageId =
     input.pipelineStageId?.trim() ||
     (input.cta ? resolvePipelineStageId(input.cta) : null) ||
-    resolvePaidPipelineStageId();
+    resolveReportReadyStageId() ||
+    resolveNewLeadStageId();
 
   if (!locationId) {
     return { opportunityId: null, error: "GHL_LOCATION_ID missing" };
@@ -288,7 +294,7 @@ export async function upsertGhlOpportunity(input: {
     return {
       opportunityId: null,
       error:
-        "Set GHL_PIPELINE_ID and GHL_STAGE_PAID (or GHL_STAGE_REPORT_READY; optional: GHL_STAGE_BOOK_CALL, GHL_STAGE_NURTURE)",
+        "Set GHL_PIPELINE_ID, GHL_STAGE_NEW_LEAD, GHL_STAGE_REPORT_READY, GHL_STAGE_BOOK_CALL",
     };
   }
 

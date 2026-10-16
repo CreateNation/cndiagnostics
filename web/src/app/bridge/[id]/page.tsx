@@ -98,6 +98,7 @@ export default async function BridgePage({
               href={bookingUrl()}
               className="cn-btn-ghost mt-6"
               source="bridge"
+              submissionId={id}
             >
               Book your strategy call
               <span aria-hidden>↗</span>

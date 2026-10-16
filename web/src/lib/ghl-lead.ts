@@ -13,7 +13,9 @@ import {
   buildGhlFields,
   fireGhlWebhook,
   isGhlApiConfigured,
-  resolvePaidPipelineStageId,
+  resolveBookCallStageId,
+  resolveNewLeadStageId,
+  resolveReportReadyStageId,
   upsertGhlContact,
   upsertGhlOpportunity,
 } from "./ghl";
@@ -104,8 +106,96 @@ function buildLeadNote(input: {
 }
 
 /**
- * On payment: upsert contact + create/open pipeline opportunity (not contact-only).
- * Idempotent via stored ghlOpportunityId.
+ * Form submitted → contact + opportunity in "New Lead".
+ */
+export async function syncCheckoutLeadToGhl(
+  submission: Submission,
+): Promise<{
+  contactId: string | null;
+  opportunityId: string | null;
+  error?: string;
+}> {
+  if (!submission.email) {
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "Email required for GHL opportunity",
+    };
+  }
+  if (!isGhlApiConfigured()) {
+    await fireGhlWebhook({
+      event: "checkout_started",
+      submission_id: submission.id,
+      email: submission.email,
+      name: submission.name,
+      fields: { cnm_diag_submission_id: submission.id },
+      contactFacingSafe: true,
+    });
+    return {
+      contactId: null,
+      opportunityId: null,
+      error: "GHL API not configured",
+    };
+  }
+
+  const stageId = resolveNewLeadStageId();
+  let contactId: string | null = submission.ghlContactId;
+  let opportunityId: string | null = submission.ghlOpportunityId;
+  let error: string | undefined;
+
+  const upsert = await upsertGhlContact({
+    email: submission.email,
+    name: submission.name,
+    phone: submission.phone,
+    tags: ["CNM Diagnostic Lead", "Checkout Started"],
+    fields: { cnm_diag_submission_id: submission.id },
+    type: "lead",
+  });
+  contactId = upsert.contactId ?? contactId;
+  if (upsert.error) {
+    error = upsert.error;
+    console.error("[GHL] checkout contact upsert failed", upsert.error);
+  }
+
+  if (contactId) {
+    const opportunityName = [
+      submission.name || submission.email,
+      "—",
+      "CNM Diagnostic",
+    ].join(" ");
+
+    const opportunity = await upsertGhlOpportunity({
+      contactId,
+      name: opportunityName,
+      pipelineStageId: stageId,
+      existingOpportunityId: opportunityId,
+    });
+    opportunityId = opportunity.opportunityId ?? opportunityId;
+    if (opportunity.error) {
+      error = error ? `${error}; ${opportunity.error}` : opportunity.error;
+      console.error("[GHL] checkout opportunity sync failed", opportunity.error);
+    }
+  }
+
+  await updateSubmission(submission.id, {
+    ghlContactId: contactId,
+    ghlOpportunityId: opportunityId,
+  });
+
+  await fireGhlWebhook({
+    event: "checkout_started",
+    submission_id: submission.id,
+    email: submission.email,
+    name: submission.name,
+    fields: { cnm_diag_submission_id: submission.id },
+    contactFacingSafe: true,
+  });
+
+  return { contactId, opportunityId, error };
+}
+
+/**
+ * Payment completed → tag paid + set monetary value; stay on New Lead until report.
  */
 export async function syncPaidDiagnosticToGhl(
   submission: Submission,
@@ -163,10 +253,11 @@ export async function syncPaidDiagnosticToGhl(
       "($9 paid)",
     ].join(" ");
 
+    // Keep New Lead stage until quiz/report finish.
     const opportunity = await upsertGhlOpportunity({
       contactId,
       name: opportunityName,
-      pipelineStageId: resolvePaidPipelineStageId(),
+      pipelineStageId: resolveNewLeadStageId(),
       existingOpportunityId: opportunityId,
       monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
     });
@@ -184,6 +275,77 @@ export async function syncPaidDiagnosticToGhl(
 
   await fireGhlWebhook({
     event: "purchase_completed",
+    submission_id: submission.id,
+    email: submission.email,
+    name: submission.name,
+    fields: { cnm_diag_submission_id: submission.id },
+    contactFacingSafe: true,
+  });
+
+  return { contactId, opportunityId, error };
+}
+
+/**
+ * Book-call CTA clicked → move opportunity to Book Call.
+ */
+export async function syncBookCallStageToGhl(
+  submission: Submission,
+): Promise<{
+  contactId: string | null;
+  opportunityId: string | null;
+  error?: string;
+}> {
+  if (!submission.email || !isGhlApiConfigured()) {
+    return {
+      contactId: submission.ghlContactId,
+      opportunityId: submission.ghlOpportunityId,
+      error: !submission.email ? "Email required" : "GHL API not configured",
+    };
+  }
+
+  let contactId: string | null = submission.ghlContactId;
+  let opportunityId: string | null = submission.ghlOpportunityId;
+  let error: string | undefined;
+
+  if (!contactId) {
+    const upsert = await upsertGhlContact({
+      email: submission.email,
+      name: submission.name,
+      phone: submission.phone,
+      tags: ["CNM Diagnostic Lead", "Book Call Clicked"],
+      fields: { cnm_diag_submission_id: submission.id },
+      type: "lead",
+    });
+    contactId = upsert.contactId;
+    if (upsert.error) error = upsert.error;
+  }
+
+  if (contactId) {
+    const opportunity = await upsertGhlOpportunity({
+      contactId,
+      name: [
+        submission.name || submission.email,
+        "—",
+        "CNM Diagnostic",
+        "(Book Call)",
+      ].join(" "),
+      pipelineStageId: resolveBookCallStageId(),
+      existingOpportunityId: opportunityId,
+      monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
+    });
+    opportunityId = opportunity.opportunityId ?? opportunityId;
+    if (opportunity.error) {
+      error = error ? `${error}; ${opportunity.error}` : opportunity.error;
+    }
+  }
+
+  await updateSubmission(submission.id, {
+    ghlContactId: contactId,
+    ghlOpportunityId: opportunityId,
+  });
+
+  await fireGhlWebhook({
+    event: "book_call_clicked",
     submission_id: submission.id,
     email: submission.email,
     name: submission.name,
@@ -329,8 +491,9 @@ export async function syncDiagnosticLeadToGhl(
       const opportunity = await upsertGhlOpportunity({
         contactId,
         name: opportunityName,
-        cta: scoring.cta,
+        pipelineStageId: resolveReportReadyStageId(),
         existingOpportunityId: opportunityId,
+        monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
       });
       opportunityId = opportunity.opportunityId ?? opportunityId;
       if (opportunity.error) {

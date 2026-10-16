@@ -4,9 +4,11 @@ import { TrackedLink } from "@/components/analytics/tracked-link";
 
 export function NinetyDayGate({
   bookingHref,
+  submissionId,
   children,
 }: {
   bookingHref: string;
+  submissionId?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -35,6 +37,7 @@ export function NinetyDayGate({
             href={bookingHref}
             className="cn-btn mt-6 w-full sm:w-auto"
             source="ninety_day_gate"
+            submissionId={submissionId}
           >
             Complementary Call Included
           </TrackedLink>

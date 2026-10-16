@@ -194,7 +194,10 @@ export default async function ClientReportPage({
         </Section>
 
         <Section title="Directional 90-day path">
-          <NinetyDayGate bookingHref={bookingUrl()}>
+          <NinetyDayGate
+            bookingHref={bookingUrl()}
+            submissionId={submission.id}
+          >
             <ul className="space-y-6">
               {pages.ninetyDayPath.weeks.map((w, i) => (
                 <li key={w.label} className="flex gap-4">
@@ -251,6 +254,7 @@ export default async function ClientReportPage({
                 href={bookingUrl()}
                 className="cn-btn mt-8 inline-flex"
                 source="report_footer"
+                submissionId={submission.id}
               >
                 Book Your Consultation Call With Luay Fawaz
                 <span aria-hidden>↗</span>
