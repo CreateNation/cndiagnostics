@@ -14,3 +14,8 @@ export function isDevBypassPayment(): boolean {
 }
 
 export const DIAGNOSTIC_PRICE_USD = 900; // $9.00 in cents
+
+/** Live/test Price ID from Stripe product (e.g. Create Nation Diagnostics). */
+export function getStripePriceId(): string | null {
+  return process.env.STRIPE_PRICE_ID?.trim() || null;
+}

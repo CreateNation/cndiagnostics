@@ -4,9 +4,11 @@ import { createSubmission, appendEvent, updateSubmission } from "@/lib/store";
 import {
   DIAGNOSTIC_PRICE_USD,
   getStripe,
+  getStripePriceId,
   isDevBypassPayment,
 } from "@/lib/stripe";
 import { absoluteUrl } from "@/lib/urls";
+import type Stripe from "stripe";
 
 function requestOrigin(req: Request): string | undefined {
   try {
@@ -61,23 +63,28 @@ export async function POST(req: Request) {
       );
     }
 
+    const priceId = getStripePriceId();
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
+      ? [{ quantity: 1, price: priceId }]
+      : [
+          {
+            quantity: 1,
+            price_data: {
+              currency: "usd",
+              unit_amount: DIAGNOSTIC_PRICE_USD,
+              product_data: {
+                name: "Create Nation Diagnostics",
+                description:
+                  "Personalized growth stage report for UAE business owners",
+              },
+            },
+          },
+        ];
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: body.email || undefined,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            unit_amount: DIAGNOSTIC_PRICE_USD,
-            product_data: {
-              name: "CNM Business Growth Diagnostic",
-              description:
-                "Personalized growth stage report for UAE business owners",
-            },
-          },
-        },
-      ],
+      line_items: lineItems,
       metadata: {
         submission_id: submission.id,
         phone: body.phone?.trim() || "",
