@@ -20,18 +20,31 @@ export async function POST(req: Request) {
 
   const sig = req.headers.get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Webhook configuration missing" },
+      { status: 500 },
+    );
+  }
+
+  if (!sig) {
+    return NextResponse.json(
+      { error: "Missing Stripe signature" },
+      { status: 400 },
+    );
+  }
+
   const raw = await req.text();
 
   let event;
   try {
-    if (secret && sig) {
-      event = stripe.webhooks.constructEvent(raw, sig, secret);
-    } else {
-      event = JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error("[stripe webhook]", err);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+    event = stripe.webhooks.constructEvent(raw, sig, secret);
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid Stripe signature" },
+      { status: 400 },
+    );
   }
 
   if (event.type === "checkout.session.completed") {
@@ -39,6 +52,8 @@ export async function POST(req: Request) {
       id: string;
       metadata?: { submission_id?: string };
       customer_details?: { email?: string; name?: string };
+      amount_total?: number | null;
+      currency?: string | null;
     };
 
     const existing = await getByStripeSession(session.id);
@@ -60,7 +75,10 @@ export async function POST(req: Request) {
       : existing;
 
     if (!submission) {
-      return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Submission not found" },
+        { status: 404 },
+      );
     }
 
     // Keep landing-form name/email — do not replace with Stripe cardholder details.
@@ -72,7 +90,13 @@ export async function POST(req: Request) {
       clientReportToken: submission.clientReportToken ?? nanoid(24),
       advisorReportToken: submission.advisorReportToken ?? nanoid(32),
     });
-    await appendEvent(submission.id, "purchase_completed");
+    await appendEvent(submission.id, "purchase_completed", {
+      stripe_session_id: session.id,
+      amount_total: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      // Planned Meta CAPI dedupe key (browser GTM should use the same):
+      // event_id: `purchase_${session.id}`
+    });
 
     await syncPaidDiagnosticToGhl(updated);
   }

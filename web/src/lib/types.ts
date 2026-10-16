@@ -50,6 +50,10 @@ export type Submission = {
   email: string | null;
   name: string | null;
   phone: string | null;
+  /** Browser UA at checkout start — for Meta CAPI (not Stripe webhook UA). */
+  clientUserAgent: string | null;
+  /** Page URL at checkout start — for Meta CAPI event_source_url. */
+  clientEventSourceUrl: string | null;
   stripeSessionId: string | null;
   answers: Answers;
   scoring: ScoringResult | null;

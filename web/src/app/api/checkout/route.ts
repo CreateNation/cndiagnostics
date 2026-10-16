@@ -25,6 +25,8 @@ export async function POST(req: Request) {
       email?: string;
       name?: string;
       phone?: string;
+      clientUserAgent?: string;
+      clientEventSourceUrl?: string;
     };
     const origin = requestOrigin(req);
     const email = body.email?.trim() || "";
@@ -39,6 +41,13 @@ export async function POST(req: Request) {
       email,
       name: body.name ?? null,
       phone: body.phone?.trim() || null,
+      clientUserAgent:
+        body.clientUserAgent?.trim() ||
+        req.headers.get("user-agent") ||
+        null,
+      clientEventSourceUrl:
+        body.clientEventSourceUrl?.trim() ||
+        (origin ? `${origin}/` : null),
       status: "pending_payment",
     });
 

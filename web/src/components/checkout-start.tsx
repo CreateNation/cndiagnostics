@@ -49,6 +49,9 @@ export function CheckoutStart({
           email: trimmedEmail,
           name: name || undefined,
           phone: phone || undefined,
+          // Captured for Meta CAPI (must be browser UA + page URL, not Stripe's).
+          clientUserAgent: navigator.userAgent,
+          clientEventSourceUrl: window.location.href,
         }),
       });
       const raw = await res.text();
