@@ -145,20 +145,14 @@ export function QuizFlow({
 
   if (submitting) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-2 py-10 text-center">
-        <p className="cn-display text-xs tracking-[0.24em] text-[var(--cn-red)]">
+      <div className="mx-auto flex w-full max-w-lg flex-col items-center px-2 py-12 text-center">
+        <p className="cn-display text-[11px] tracking-[0.24em] text-[var(--cn-red)]">
           Almost there
         </p>
-        <h1 className="cn-display mt-3 text-3xl text-[var(--cn-ink)] sm:text-4xl">
+        <h1 className="cn-display mt-3 text-3xl leading-tight text-[var(--cn-ink)] sm:text-[2.5rem]">
           Building your diagnosis
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-[var(--cn-muted)]">
-          This can take up to a minute. Please keep this tab open — you&apos;ll
-          see a progress bar while we work.
-        </p>
-        <div className="flex justify-center">
-          <ReportGeneratingLoader tone="light" />
-        </div>
+        <ReportGeneratingLoader tone="light" />
       </div>
     );
   }

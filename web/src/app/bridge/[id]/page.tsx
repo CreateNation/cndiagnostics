@@ -48,20 +48,20 @@ export default async function BridgePage({
         <p className="cn-display animate-fade-up text-xs tracking-[0.28em] text-[var(--cn-red)]">
           Create Nation Diagnostic
         </p>
-        <h1 className="cn-display animate-fade-up-delay mt-4 text-4xl leading-[1.05] sm:text-6xl">
+        <h1 className="cn-display animate-fade-up-delay mt-4 max-w-2xl text-4xl leading-[1.05] sm:text-5xl">
           {failed
             ? "We hit a snag building your report"
             : ready
               ? "Your diagnosis is ready"
-              : "Your diagnosis is being built"}
+              : "Building your diagnosis"}
         </h1>
-        <p className="animate-fade-up-late mt-6 max-w-xl text-lg leading-relaxed text-white/62">
-          {failed
-            ? "Please retry from the quiz or contact us. Your answers were saved."
-            : ready
-              ? "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."
-              : "Hang tight — we’re turning your answers into a clear growth diagnosis."}
-        </p>
+        {(ready || failed) && (
+          <p className="animate-fade-up-late mt-6 max-w-xl text-lg leading-relaxed text-white/62">
+            {failed
+              ? "Please retry from the quiz or contact us. Your answers were saved."
+              : "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."}
+          </p>
+        )}
 
         {!ready && !failed && <ReportGeneratingLoader />}
 

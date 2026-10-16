@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 const STEPS = [
   "Reading your answers",
@@ -24,8 +24,8 @@ export function ReportGeneratingLoader({
 
   useEffect(() => {
     const stepTimer = setInterval(() => {
-      setStep((s) => (s + 1) % STEPS.length);
-    }, 2200);
+      setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    }, 2800);
     return () => clearInterval(stepTimer);
   }, []);
 
@@ -33,33 +33,30 @@ export function ReportGeneratingLoader({
     const progressTimer = setInterval(() => {
       setProgress((p) => {
         if (p >= 94) return 94;
-        const bump = p < 35 ? 2.8 : p < 65 ? 1.6 : p < 85 ? 0.7 : 0.25;
+        const bump = p < 35 ? 2.4 : p < 65 ? 1.4 : p < 85 ? 0.6 : 0.22;
         return Math.min(94, p + bump);
       });
-    }, 350);
+    }, 400);
     return () => clearInterval(progressTimer);
   }, []);
 
   const light = tone === "light";
-  const trackBg = light ? "bg-[var(--cn-line)]" : "bg-white/12";
-  const stepColor = light ? "text-[var(--cn-ink)]" : "text-white/85";
-  const metaColor = light ? "text-[var(--cn-muted)]" : "text-white/40";
-  const pctColor = light ? "text-[var(--cn-ink)]" : "text-white/70";
+  const pct = Math.round(progress);
 
   return (
     <div
-      className="mt-10 animate-fade-up-late"
+      className="mx-auto mt-10 w-full max-w-md animate-fade-up-late"
       role="status"
       aria-live="polite"
       aria-busy="true"
-      aria-label={`Generating your report, ${Math.round(progress)} percent`}
+      aria-label={`Generating your report, ${pct} percent`}
     >
-      <div className="relative mx-auto h-44 w-44 sm:h-52 sm:w-52">
+      {/* Dial */}
+      <div className="relative mx-auto h-36 w-36 sm:h-40 sm:w-40">
         <div
           aria-hidden
-          className="absolute inset-6 rounded-full bg-[var(--cn-red)]/15 blur-2xl animate-pulse-soft"
+          className="absolute inset-5 rounded-full bg-[var(--cn-red)]/12 blur-xl animate-pulse-soft"
         />
-
         <div
           aria-hidden
           className={`absolute inset-0 rounded-full border ${
@@ -68,84 +65,104 @@ export function ReportGeneratingLoader({
         />
         <div
           aria-hidden
-          className={`absolute inset-[14%] rounded-full border border-dashed cn-loader-spin-slow ${
-            light ? "border-[var(--cn-ink)]/20" : "border-white/18"
-          }`}
-        />
-        <div
-          aria-hidden
-          className={`absolute inset-[28%] rounded-full border ${
-            light ? "border-[var(--cn-line)]" : "border-white/12"
-          }`}
-        />
-
-        <div
-          aria-hidden
-          className="absolute inset-0 cn-loader-spin"
+          className="absolute inset-[10%] rounded-full cn-loader-spin"
           style={{
             background:
-              "conic-gradient(from 0deg, transparent 0deg, transparent 250deg, color-mix(in srgb, var(--cn-red) 70%, transparent) 310deg, transparent 360deg)",
-            borderRadius: "9999px",
+              "conic-gradient(from 210deg, transparent 0deg, transparent 240deg, color-mix(in srgb, var(--cn-red) 75%, transparent) 300deg, transparent 360deg)",
             maskImage:
               "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
             WebkitMaskImage:
               "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px))",
           }}
         />
-
-        {[0, 72, 144, 216, 288].map((deg) => (
+        <div
+          className={`absolute inset-[22%] flex flex-col items-center justify-center rounded-full border border-[var(--cn-red)]/40 ${
+            light ? "bg-white" : "bg-[var(--cn-charcoal)]"
+          }`}
+        >
           <span
-            key={deg}
-            aria-hidden
-            className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--cn-red)] cn-loader-orbit"
-            style={
-              {
-                "--orbit-deg": `${deg}deg`,
-                animationDelay: `${(deg / 72) * 0.12}s`,
-              } as CSSProperties
-            }
-          />
-        ))}
-
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div
-            className={`relative flex h-16 w-16 flex-col items-center justify-center rounded-full border border-[var(--cn-red)]/50 shadow-[0_0_40px_color-mix(in_srgb,var(--cn-red)_35%,transparent)] sm:h-[4.5rem] sm:w-[4.5rem] ${
-              light ? "bg-white" : "bg-[var(--cn-charcoal)]"
+            className={`cn-display text-3xl leading-none tracking-tight ${
+              light ? "text-[var(--cn-ink)]" : "text-white"
             }`}
           >
-            <span
-              aria-hidden
-              className="absolute inset-2 rounded-full border border-[var(--cn-red)]/30 animate-pulse-soft"
-            />
-            <span className={`cn-display text-lg tracking-tight ${pctColor}`}>
-              {Math.round(progress)}
-              <span className="text-[10px]">%</span>
-            </span>
-          </div>
+            {pct}
+          </span>
+          <span
+            className={`mt-1 text-[10px] uppercase tracking-[0.2em] ${
+              light ? "text-[var(--cn-muted)]" : "text-white/45"
+            }`}
+          >
+            complete
+          </span>
         </div>
       </div>
 
-      <div className="mt-8 max-w-md">
+      {/* Status + bar */}
+      <div className="mt-8 text-center">
         <p
-          className={`cn-display min-h-[1.5rem] text-sm tracking-[0.12em] transition-opacity duration-500 ${stepColor}`}
+          className={`cn-display text-[11px] tracking-[0.2em] ${
+            light ? "text-[var(--cn-muted)]" : "text-white/45"
+          }`}
+        >
+          Step {step + 1} of {STEPS.length}
+        </p>
+        <p
+          key={step}
+          className={`cn-display mt-2 min-h-[1.4rem] text-base tracking-[0.04em] transition-opacity duration-500 sm:text-lg ${
+            light ? "text-[var(--cn-ink)]" : "text-white"
+          }`}
         >
           {STEPS[step]}
-          <span className="cn-loader-dots text-[var(--cn-red)]" aria-hidden>
-            …
-          </span>
         </p>
 
-        <div className={`mt-5 h-2 overflow-hidden rounded-full ${trackBg}`}>
+        <div
+          className={`mt-6 h-1.5 w-full overflow-hidden rounded-full ${
+            light ? "bg-[var(--cn-line)]" : "bg-white/10"
+          }`}
+        >
           <div
             className="h-full rounded-full bg-[var(--cn-red)] transition-[width] duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p
-          className={`mt-3 text-xs uppercase tracking-[0.16em] ${metaColor}`}
+
+        <div
+          className={`mt-3 flex items-center justify-between text-[11px] tracking-[0.14em] uppercase ${
+            light ? "text-[var(--cn-muted)]" : "text-white/40"
+          }`}
         >
-          Building your diagnosis · usually under a minute — please keep this tab open
+          <span>Building diagnosis</span>
+          <span>{pct}%</span>
+        </div>
+
+        <p
+          className={`mt-5 text-sm leading-relaxed ${
+            light ? "text-[var(--cn-muted)]" : "text-white/50"
+          }`}
+        >
+          Usually under a minute. Please keep this tab open.
         </p>
+      </div>
+
+      {/* Step rail */}
+      <div
+        className="mt-8 flex items-center justify-center gap-1.5"
+        aria-hidden
+      >
+        {STEPS.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1 rounded-full transition-all duration-500 ${
+              i < step
+                ? "w-3 bg-[var(--cn-red)]"
+                : i === step
+                  ? "w-5 bg-[var(--cn-red)]"
+                  : light
+                    ? "w-1.5 bg-[var(--cn-line)]"
+                    : "w-1.5 bg-white/15"
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
