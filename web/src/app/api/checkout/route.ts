@@ -8,6 +8,14 @@ import {
 } from "@/lib/stripe";
 import { absoluteUrl } from "@/lib/urls";
 
+function requestOrigin(req: Request): string | undefined {
+  try {
+    return new URL(req.url).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as {
@@ -15,6 +23,7 @@ export async function POST(req: Request) {
       name?: string;
       phone?: string;
     };
+    const origin = requestOrigin(req);
 
     const submission = await createSubmission({
       email: body.email ?? null,
@@ -40,7 +49,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         mode: "dev_bypass",
         submissionId: paid.id,
-        quizUrl: absoluteUrl(`/quiz/${paid.id}`),
+        quizUrl: absoluteUrl(`/quiz/${paid.id}`, origin),
       });
     }
 
@@ -75,8 +84,9 @@ export async function POST(req: Request) {
       },
       success_url: absoluteUrl(
         `/quiz/${submission.id}?session_id={CHECKOUT_SESSION_ID}`,
+        origin,
       ),
-      cancel_url: absoluteUrl("/?cancelled=1"),
+      cancel_url: absoluteUrl("/?cancelled=1", origin),
     });
 
     await updateSubmission(submission.id, {
