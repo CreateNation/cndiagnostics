@@ -63,11 +63,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Submission not found" }, { status: 404 });
     }
 
+    // Keep landing-form name/email — do not replace with Stripe cardholder details.
     const updated = await updateSubmission(submission.id, {
       status: "paid",
       stripeSessionId: session.id,
-      email: session.customer_details?.email ?? submission.email,
-      name: session.customer_details?.name ?? submission.name,
+      email: submission.email || session.customer_details?.email || null,
+      name: submission.name,
       clientReportToken: submission.clientReportToken ?? nanoid(24),
       advisorReportToken: submission.advisorReportToken ?? nanoid(32),
     });

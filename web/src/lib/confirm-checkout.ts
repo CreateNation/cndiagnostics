@@ -40,14 +40,17 @@ export async function confirmCheckoutSession(
     return submission;
   }
 
+  // Keep landing-form name/email as source of truth — never overwrite with
+  // Stripe card billing details (often a different cardholder name).
   const updated = await updateSubmission(submissionId, {
     status: "paid",
     stripeSessionId: session.id,
     email:
-      session.customer_details?.email ??
-      session.customer_email ??
-      submission.email,
-    name: session.customer_details?.name ?? submission.name,
+      submission.email ||
+      session.customer_details?.email ||
+      session.customer_email ||
+      null,
+    name: submission.name,
     clientReportToken: submission.clientReportToken ?? nanoid(24),
     advisorReportToken: submission.advisorReportToken ?? nanoid(32),
   });
