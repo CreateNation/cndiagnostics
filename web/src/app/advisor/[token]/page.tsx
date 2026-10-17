@@ -20,26 +20,26 @@ export default async function AdvisorReportPage({
   const fullPdfHref = `/api/advisor/${token}/pdf`;
 
   return (
-    <div className="min-h-full bg-[#0f0f0f] text-white">
+    <div className="min-h-full overflow-x-hidden bg-[#0f0f0f] text-white">
       <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-5">
+        <div className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
-            <p className="cn-display text-xs tracking-[0.22em] text-[var(--cn-red)]">
+            <p className="cn-display text-[10px] tracking-[0.18em] text-[var(--cn-red)] sm:text-xs sm:tracking-[0.22em]">
               Advisor only — never send to contact
             </p>
-            <h1 className="cn-display mt-1 text-2xl">Pre-call intel</h1>
+            <h1 className="cn-display mt-1 text-xl sm:text-2xl">Pre-call intel</h1>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-3 text-sm">
+          <div className="flex flex-col gap-3 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <a
               href={fullPdfHref}
-              className="cn-btn"
+              className="cn-btn w-full justify-center sm:w-auto"
             >
               Download full PDF
               <span aria-hidden>↗</span>
             </a>
             <a
               href={`/report/${submission.clientReportToken}`}
-              className="text-white/60 underline hover:text-white"
+              className="text-center text-white/60 underline hover:text-white sm:text-left"
             >
               Open client report (blurred)
             </a>
@@ -47,7 +47,7 @@ export default async function AdvisorReportPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl space-y-8 px-6 py-10">
+      <main className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6 sm:py-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Stage" value={scoring.stageName} />
           <Stat label="Band" value={intel.band} />

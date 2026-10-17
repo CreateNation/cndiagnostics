@@ -280,12 +280,12 @@ export function QuizFlow({
           <p className="mt-4 text-sm text-[var(--cn-red)]">{error}</p>
         )}
 
-        <div className="mt-10 flex items-center justify-between gap-3">
+        <div className="mt-10 flex items-center justify-between gap-2 sm:gap-3">
           <button
             type="button"
             disabled={index === 0 || submitting}
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
-            className="cn-display px-2 py-3 text-xs tracking-[0.18em] text-[var(--cn-muted)] transition hover:text-[var(--cn-ink)] disabled:opacity-30"
+            className="cn-display shrink-0 px-2 py-3 text-xs tracking-[0.18em] text-[var(--cn-muted)] transition hover:text-[var(--cn-ink)] disabled:opacity-30"
           >
             Back
           </button>
@@ -293,7 +293,7 @@ export function QuizFlow({
             type="button"
             disabled={submitting}
             onClick={next}
-            className="cn-btn min-w-[11rem]"
+            className="cn-btn min-w-0 flex-1 px-3 text-[0.8rem] sm:min-w-[11rem] sm:flex-none sm:px-6 sm:text-base"
           >
             {submitting
               ? "Building report…"

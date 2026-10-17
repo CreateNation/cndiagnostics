@@ -8,5 +8,11 @@
     "src/app/api/quiz/[id]/regenerate/route.ts": {
       "maxDuration": 120
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/meta-capi-retry",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

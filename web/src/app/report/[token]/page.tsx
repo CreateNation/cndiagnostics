@@ -46,7 +46,7 @@ export default async function ClientReportPage({
   const cta = pages.nextStep.cta;
 
   return (
-    <div className="min-h-full bg-[var(--cn-paper)]">
+    <div className="min-h-full overflow-x-hidden bg-[var(--cn-paper)]">
       <ReportViewTracker token={token} stageName={pages.cover.stageName} />
       <header className="relative overflow-hidden bg-[var(--cn-charcoal)] text-white">
         <div aria-hidden className="cn-surface-dark pointer-events-none absolute inset-0" />
@@ -54,27 +54,27 @@ export default async function ClientReportPage({
           aria-hidden
           className="cn-arc-pattern pointer-events-none absolute inset-0 opacity-70"
         />
-        <div className="relative mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-          <Link href="/">
-            <BrandLogo size="md" />
+        <div className="relative mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-6">
+          <Link href="/" className="shrink-0">
+            <BrandLogo size="sm" />
           </Link>
-          <span className="cn-display text-[10px] tracking-[0.2em] text-white/45">
+          <span className="cn-display truncate text-[9px] tracking-[0.16em] text-white/45 sm:text-[10px] sm:tracking-[0.2em]">
             Growth Diagnostic
           </span>
         </div>
 
-        <div className="relative mx-auto max-w-3xl px-6 pb-14 pt-8">
-          <p className="cn-display text-xs tracking-[0.28em] text-[var(--cn-red)]">
+        <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8">
+          <p className="cn-display text-[11px] tracking-[0.22em] text-[var(--cn-red)] sm:text-xs sm:tracking-[0.28em]">
             Client report
           </p>
-          <h1 className="cn-display mt-4 text-4xl leading-[0.98] sm:text-5xl md:text-6xl">
+          <h1 className="cn-display mt-3 text-[1.85rem] leading-[1.05] break-words sm:mt-4 sm:text-5xl md:text-6xl">
             {pages.cover.businessName}
           </h1>
           <div
             aria-hidden
-            className="mt-6 h-[3px] w-20 bg-[var(--cn-red)]"
+            className="mt-5 h-[3px] w-16 bg-[var(--cn-red)] sm:mt-6 sm:w-20"
           />
-          <p className="mt-6 text-lg text-white/58">
+          <p className="mt-5 text-base text-white/58 sm:mt-6 sm:text-lg">
             Stage:{" "}
             <span className="text-white">{pages.cover.stageName}</span>
             <span className="mx-2 text-white/25">·</span>
@@ -82,7 +82,7 @@ export default async function ClientReportPage({
           </p>
           <a
             href={`/api/report/${token}/pdf`}
-            className="cn-btn mt-8 inline-flex"
+            className="cn-btn mt-6 inline-flex w-full justify-center sm:mt-8 sm:w-auto"
           >
             Download PDF
             <span aria-hidden>↗</span>
@@ -90,7 +90,7 @@ export default async function ClientReportPage({
         </div>
       </header>
 
-      <article className="mx-auto max-w-3xl space-y-14 px-6 py-14">
+      <article className="mx-auto max-w-3xl space-y-10 px-4 py-10 sm:space-y-14 sm:px-6 sm:py-14">
         <Section title="Your stage & what it means">
           <p className="text-lg leading-relaxed">{pages.stage.evidence}</p>
           <p className="mt-5 border-l-2 border-[var(--cn-red)] pl-4 text-sm leading-relaxed text-[var(--cn-muted)]">

@@ -27,6 +27,8 @@ export async function POST(req: Request) {
       phone?: string;
       clientUserAgent?: string;
       clientEventSourceUrl?: string;
+      clientFbp?: string;
+      clientFbc?: string;
     };
     const origin = requestOrigin(req);
     const email = body.email?.trim() || "";
@@ -48,6 +50,9 @@ export async function POST(req: Request) {
       clientEventSourceUrl:
         body.clientEventSourceUrl?.trim() ||
         (origin ? `${origin}/` : null),
+      // Only persist genuine Meta cookies from the browser — never invent.
+      clientFbp: body.clientFbp?.trim() || null,
+      clientFbc: body.clientFbc?.trim() || null,
       status: "pending_payment",
     });
 

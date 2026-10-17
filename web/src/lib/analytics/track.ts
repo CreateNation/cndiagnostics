@@ -126,9 +126,17 @@ export function track(event: string, payload: TrackPayload = {}): void {
       });
       break;
 
-    case "purchase":
+    case "purchase": {
+      const transactionId = String(enriched.transaction_id ?? "");
+      const eventId =
+        typeof enriched.event_id === "string" && enriched.event_id
+          ? enriched.event_id
+          : transactionId
+            ? `purchase_${transactionId}`
+            : undefined;
       gtagEvent("purchase", {
-        transaction_id: String(enriched.transaction_id ?? ""),
+        transaction_id: transactionId,
+        event_id: eventId,
         value: Number(enriched.value ?? DIAGNOSTIC_PURCHASE_VALUE),
         currency: DIAGNOSTIC_CURRENCY,
         items: [
@@ -144,7 +152,7 @@ export function track(event: string, payload: TrackPayload = {}): void {
           send_to: `${ids.googleAdsId}/${process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL}`,
           value: DIAGNOSTIC_PURCHASE_VALUE,
           currency: DIAGNOSTIC_CURRENCY,
-          transaction_id: String(enriched.transaction_id ?? ""),
+          transaction_id: transactionId,
         });
       }
       tiktokEvent("CompletePayment", {
@@ -152,6 +160,7 @@ export function track(event: string, payload: TrackPayload = {}): void {
         currency: DIAGNOSTIC_CURRENCY,
       });
       break;
+    }
 
     case "quiz_started":
       gtagEvent("quiz_started", enriched);

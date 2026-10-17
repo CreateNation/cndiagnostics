@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { Redis } from "@upstash/redis";
 import { nanoid } from "nanoid";
+import { getRedis } from "./redis";
 import type { FunnelEvent, Submission, SubmissionStatus } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), ".data");
@@ -11,13 +11,8 @@ type StoreShape = {
   submissions: Record<string, Submission>;
 };
 
-function redisClient(): Redis | null {
-  const url =
-    process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token =
-    process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-  return new Redis({ url, token });
+function redisClient() {
+  return getRedis();
 }
 
 function submissionKey(id: string) {
@@ -98,6 +93,8 @@ export async function createSubmission(
     phone: partial?.phone ?? null,
     clientUserAgent: partial?.clientUserAgent ?? null,
     clientEventSourceUrl: partial?.clientEventSourceUrl ?? null,
+    clientFbp: partial?.clientFbp ?? null,
+    clientFbc: partial?.clientFbc ?? null,
     stripeSessionId: partial?.stripeSessionId ?? null,
     answers: partial?.answers ?? {},
     scoring: partial?.scoring ?? null,

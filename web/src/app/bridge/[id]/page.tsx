@@ -25,30 +25,30 @@ export default async function BridgePage({
   const emailAlreadySent = Boolean(submission.reportEmailSentAt);
 
   return (
-    <div className="relative flex min-h-full flex-col overflow-hidden bg-[var(--cn-charcoal)] text-white">
+    <div className="relative flex min-h-full flex-col overflow-x-hidden bg-[var(--cn-charcoal)] text-white">
       <div aria-hidden className="cn-surface-dark pointer-events-none absolute inset-0" />
       <div aria-hidden className="cn-grain pointer-events-none absolute inset-0" />
 
       <header className="relative z-10 border-b border-white/10">
-        <div className="mx-auto flex max-w-3xl items-center px-6 py-6">
-          <Link href="/">
-            <BrandLogo size="md" />
+        <div className="mx-auto flex max-w-3xl items-center px-4 py-4 sm:px-6 sm:py-6">
+          <Link href="/" className="shrink-0">
+            <BrandLogo size="sm" />
           </Link>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-20">
+      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-12 sm:px-6 sm:py-20">
         {ready && (
           <div
             aria-hidden
-            className="mb-8 h-[3px] w-24 rounded-full bg-[var(--cn-red)] animate-draw-line"
+            className="mb-6 h-[3px] w-20 rounded-full bg-[var(--cn-red)] animate-draw-line sm:mb-8 sm:w-24"
           />
         )}
 
-        <p className="cn-display animate-fade-up text-xs tracking-[0.28em] text-[var(--cn-red)]">
+        <p className="cn-display animate-fade-up text-[11px] tracking-[0.22em] text-[var(--cn-red)] sm:text-xs sm:tracking-[0.28em]">
           Create Nation Diagnostic
         </p>
-        <h1 className="cn-display animate-fade-up-delay mt-4 max-w-2xl text-4xl leading-[1.05] sm:text-5xl">
+        <h1 className="cn-display animate-fade-up-delay mt-3 max-w-2xl text-[1.85rem] leading-[1.08] sm:mt-4 sm:text-5xl">
           {failed
             ? "We hit a snag building your report"
             : ready
@@ -56,7 +56,7 @@ export default async function BridgePage({
               : "Building your diagnosis"}
         </h1>
         {(ready || failed) && (
-          <p className="animate-fade-up-late mt-6 max-w-xl text-lg leading-relaxed text-white/62">
+          <p className="animate-fade-up-late mt-5 max-w-xl text-base leading-relaxed text-white/62 sm:mt-6 sm:text-lg">
             {failed
               ? "Please retry from the quiz or contact us. Your answers were saved."
               : "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."}
@@ -76,7 +76,7 @@ export default async function BridgePage({
         {ready && reportHref && (
           <Link
             href={reportHref}
-            className="cn-btn mt-10 w-fit animate-fade-up-late"
+            className="cn-btn mt-8 w-full justify-center animate-fade-up-late sm:mt-10 sm:w-fit"
           >
             Open my report
             <span aria-hidden>↗</span>
@@ -84,19 +84,19 @@ export default async function BridgePage({
         )}
 
         {cta === "book_call" && (
-          <div className="mt-14 border-t border-white/12 pt-10 animate-fade-up-late">
-            <h2 className="cn-display text-2xl sm:text-3xl">
+          <div className="mt-10 border-t border-white/12 pt-8 animate-fade-up-late sm:mt-14 sm:pt-10">
+            <h2 className="cn-display text-xl sm:text-3xl">
               {ready
                 ? "Ready to close the gap?"
                 : "While you wait — lock in your strategy call"}
             </h2>
-            <p className="mt-4 max-w-xl text-white/58">
+            <p className="mt-4 max-w-xl text-sm text-white/58 sm:text-base">
               Your report shows where the leak is. On a short call, we walk
               through exactly how to close it.
             </p>
             <TrackedLink
               href={bookingUrl()}
-              className="cn-btn-ghost mt-6"
+              className="cn-btn-ghost mt-6 w-full justify-center sm:w-auto"
               source="bridge"
               submissionId={id}
             >

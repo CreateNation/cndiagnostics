@@ -9,7 +9,8 @@ import {
 
 /**
  * Fires `purchase` once after Stripe payment is server-verified.
- * `transaction_id` is the Stripe Checkout Session ID (stable for dedupe).
+ * `event_id` matches Meta CAPI: `purchase_${session.id}` (GTM → Pixel).
+ * `transaction_id` remains the raw Stripe Checkout Session ID for GA4.
  */
 export function PurchaseTracker({
   sessionId,
@@ -35,6 +36,7 @@ export function PurchaseTracker({
     fired.current = true;
     track("purchase", {
       transaction_id: sessionId,
+      event_id: `purchase_${sessionId}`,
       submission_id: submissionId,
       value: DIAGNOSTIC_PURCHASE_VALUE,
       currency: DIAGNOSTIC_CURRENCY,

@@ -54,6 +54,10 @@ export type Submission = {
   clientUserAgent: string | null;
   /** Page URL at checkout start — for Meta CAPI event_source_url. */
   clientEventSourceUrl: string | null;
+  /** Genuine Meta `_fbp` cookie if present at checkout (never invented). */
+  clientFbp: string | null;
+  /** Genuine Meta `_fbc` cookie if present at checkout (never invented). */
+  clientFbc: string | null;
   stripeSessionId: string | null;
   answers: Answers;
   scoring: ScoringResult | null;

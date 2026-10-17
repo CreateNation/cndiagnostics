@@ -6,6 +6,7 @@ import {
   updateSubmission,
 } from "@/lib/store";
 import { syncPaidDiagnosticToGhl } from "@/lib/ghl-lead";
+import { enqueueMetaPurchase } from "@/lib/meta/capi-purchase";
 import type { Submission } from "@/lib/types";
 
 const PAID_STATUSES = new Set([
@@ -17,6 +18,11 @@ const PAID_STATUSES = new Set([
   "report_failed",
 ]);
 
+/**
+ * Verify Stripe session is paid, mark submission paid, sync GHL, enqueue Meta CAPI.
+ * Meta failures never block paid status / quiz / GHL. Already-paid submissions
+ * still enqueue CAPI if delivery was never sent (deduped by purchase_${session.id}).
+ */
 export async function confirmCheckoutSession(
   submissionId: string,
   sessionId: string,
@@ -26,7 +32,6 @@ export async function confirmCheckoutSession(
 
   const submission = await getSubmission(submissionId);
   if (!submission) return null;
-  if (PAID_STATUSES.has(submission.status)) return submission;
 
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   if (session.payment_status !== "paid" && session.status !== "complete") {
@@ -40,26 +45,43 @@ export async function confirmCheckoutSession(
     return submission;
   }
 
-  // Keep landing-form name/email as source of truth — never overwrite with
-  // Stripe card billing details (often a different cardholder name).
-  const updated = await updateSubmission(submissionId, {
-    status: "paid",
-    stripeSessionId: session.id,
-    email:
-      submission.email ||
-      session.customer_details?.email ||
-      session.customer_email ||
-      null,
-    name: submission.name,
-    clientReportToken: submission.clientReportToken ?? nanoid(24),
-    advisorReportToken: submission.advisorReportToken ?? nanoid(32),
-  });
+  let updated = submission;
 
-  await appendEvent(submissionId, "purchase_completed", {
-    mode: "checkout_redirect",
-  });
+  if (!PAID_STATUSES.has(submission.status)) {
+    // Keep landing-form name/email as source of truth — never overwrite with
+    // Stripe card billing details (often a different cardholder name).
+    updated = await updateSubmission(submissionId, {
+      status: "paid",
+      stripeSessionId: session.id,
+      email:
+        submission.email ||
+        session.customer_details?.email ||
+        session.customer_email ||
+        null,
+      name: submission.name,
+      clientReportToken: submission.clientReportToken ?? nanoid(24),
+      advisorReportToken: submission.advisorReportToken ?? nanoid(32),
+    });
 
-  await syncPaidDiagnosticToGhl(updated);
+    await appendEvent(submissionId, "purchase_completed", {
+      mode: "checkout_redirect",
+      stripe_session_id: session.id,
+    });
 
-  return (await getSubmission(submissionId)) ?? updated;
+    try {
+      await syncPaidDiagnosticToGhl(updated);
+    } catch (err) {
+      console.error(
+        "[confirm-checkout] GHL sync failed (paid status kept)",
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    updated = (await getSubmission(submissionId)) ?? updated;
+  }
+
+  // Meta CAPI — independent of GHL; enqueue even when already paid.
+  await enqueueMetaPurchase({ session, submission: updated });
+
+  return updated;
 }

@@ -42,6 +42,19 @@ export function CheckoutStart({
       phone_present: Boolean(phone),
     });
     try {
+      const cookie = (key: string) => {
+        try {
+          const match = document.cookie.match(
+            new RegExp(`(?:^|; )${key}=([^;]*)`),
+          );
+          return match ? decodeURIComponent(match[1]) : null;
+        } catch {
+          return null;
+        }
+      };
+      const fbp = cookie("_fbp");
+      const fbc = cookie("_fbc");
+
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,6 +65,9 @@ export function CheckoutStart({
           // Captured for Meta CAPI (must be browser UA + page URL, not Stripe's).
           clientUserAgent: navigator.userAgent,
           clientEventSourceUrl: window.location.href,
+          // Genuine Meta cookies only — omit if absent (server will not invent).
+          ...(fbp ? { clientFbp: fbp } : {}),
+          ...(fbc ? { clientFbc: fbc } : {}),
         }),
       });
       const raw = await res.text();
@@ -98,8 +114,8 @@ export function CheckoutStart({
       onSubmit={startCheckout}
       className={
         card
-          ? "relative w-full overflow-hidden rounded-2xl bg-white p-6 shadow-[0_0_60px_rgba(255,255,255,0.18)] sm:p-8"
-          : "relative w-full overflow-hidden rounded-[1rem] border border-white/12 bg-white/[0.04] p-6 backdrop-blur-md sm:p-7"
+          ? "relative w-full overflow-hidden rounded-xl bg-white p-5 shadow-[0_0_60px_rgba(255,255,255,0.18)] sm:rounded-2xl sm:p-8"
+          : "relative w-full overflow-hidden rounded-[1rem] border border-white/12 bg-white/[0.04] p-5 backdrop-blur-md sm:p-7"
       }
     >
       {!card && (
@@ -199,7 +215,7 @@ export function CheckoutStart({
       <button
         type="submit"
         disabled={loading}
-        className="cn-btn mt-6 w-full text-base uppercase tracking-[0.04em]"
+        className="cn-btn mt-6 w-full px-3 text-[0.8rem] leading-snug tracking-[0.04em] sm:px-6 sm:text-base"
       >
         {loading ? "Opening checkout…" : "Get My Marketing Audit for $9"}
       </button>
@@ -215,11 +231,16 @@ export function CheckoutStart({
       )}
 
       <p
-        className={`mt-4 text-center text-xs leading-relaxed ${
+        className={`mt-4 text-center text-[11px] leading-relaxed sm:text-xs ${
           card ? "text-[var(--cn-muted)]" : "text-white/40"
         }`}
       >
-        Secure Stripe checkout · Report in minutes · Built for UAE businesses
+        <span className="sm:hidden">
+          Secure Stripe · Report in minutes · UAE businesses
+        </span>
+        <span className="hidden sm:inline">
+          Secure Stripe checkout · Report in minutes · Built for UAE businesses
+        </span>
       </p>
     </form>
   );

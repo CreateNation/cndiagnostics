@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
+import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import {
   appendEvent,
@@ -8,6 +9,7 @@ import {
   updateSubmission,
 } from "@/lib/store";
 import { syncPaidDiagnosticToGhl } from "@/lib/ghl-lead";
+import { enqueueMetaPurchase } from "@/lib/meta/capi-purchase";
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
 
   const raw = await req.text();
 
-  let event;
+  let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(raw, sig, secret);
   } catch {
@@ -48,27 +50,9 @@ export async function POST(req: Request) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as {
-      id: string;
-      metadata?: { submission_id?: string };
-      customer_details?: { email?: string; name?: string };
-      amount_total?: number | null;
-      currency?: string | null;
-    };
+    const session = event.data.object as Stripe.Checkout.Session;
 
     const existing = await getByStripeSession(session.id);
-    if (existing?.status === "report_ready") {
-      return NextResponse.json({ ok: true, idempotent: true });
-    }
-
-    // Already marked paid (e.g. success redirect) — still ensure opportunity exists.
-    if (existing?.status === "paid") {
-      if (!existing.ghlOpportunityId) {
-        await syncPaidDiagnosticToGhl(existing);
-      }
-      return NextResponse.json({ ok: true, idempotent: true });
-    }
-
     const submissionId = session.metadata?.submission_id;
     const submission = submissionId
       ? await getSubmission(submissionId)
@@ -79,6 +63,23 @@ export async function POST(req: Request) {
         { error: "Submission not found" },
         { status: 404 },
       );
+    }
+
+    // Already past paid (e.g. quiz/report) — still ensure GHL + CAPI.
+    if (existing && existing.status !== "pending_payment") {
+      if (!existing.ghlOpportunityId) {
+        try {
+          await syncPaidDiagnosticToGhl(existing);
+        } catch (err) {
+          console.error(
+            "[stripe-webhook] GHL sync failed",
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+      const latest = (await getSubmission(existing.id)) ?? existing;
+      await enqueueMetaPurchase({ session, submission: latest });
+      return NextResponse.json({ ok: true, idempotent: true });
     }
 
     // Keep landing-form name/email — do not replace with Stripe cardholder details.
@@ -94,11 +95,20 @@ export async function POST(req: Request) {
       stripe_session_id: session.id,
       amount_total: session.amount_total ?? null,
       currency: session.currency ?? null,
-      // Planned Meta CAPI dedupe key (browser GTM should use the same):
-      // event_id: `purchase_${session.id}`
+      event_id: `purchase_${session.id}`,
     });
 
-    await syncPaidDiagnosticToGhl(updated);
+    try {
+      await syncPaidDiagnosticToGhl(updated);
+    } catch (err) {
+      console.error(
+        "[stripe-webhook] GHL sync failed (paid status kept)",
+        err instanceof Error ? err.message : err,
+      );
+    }
+
+    const latest = (await getSubmission(submission.id)) ?? updated;
+    await enqueueMetaPurchase({ session, submission: latest });
   }
 
   return NextResponse.json({ ok: true });

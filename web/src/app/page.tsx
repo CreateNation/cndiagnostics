@@ -11,42 +11,42 @@ export default async function HomePage({
   const params = await searchParams;
 
   return (
-    <div className="min-h-full bg-black text-white">
+    <div className="flex min-h-full flex-col overflow-x-hidden bg-black text-white">
       {/* Top announcement bar — matches CNM GHL landing */}
-      <div className="bg-[var(--cn-red)] px-4 py-2.5 text-center">
-        <p className="cn-display text-[11px] tracking-[0.18em] text-white sm:text-xs">
+      <div className="bg-[var(--cn-red)] px-3 py-2 text-center sm:px-4 sm:py-2.5">
+        <p className="cn-display text-[10px] leading-snug tracking-[0.14em] text-white sm:text-[11px] sm:tracking-[0.18em] sm:text-xs">
           FOR BUSINESS OWNERS READY TO GROW
         </p>
       </div>
 
-      <main className="relative overflow-hidden">
+      <main className="relative flex-1 overflow-hidden">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(228,67,54,0.22),transparent_55%)]"
         />
 
-        <section className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-20 pt-10 text-center sm:pt-14">
+        <section className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-4 pb-14 pt-8 text-center sm:px-6 sm:pb-20 sm:pt-14">
           <Link
             href="/"
-            className="mb-10 opacity-95 transition hover:opacity-100 sm:mb-12"
+            className="mb-8 shrink-0 opacity-95 transition hover:opacity-100 sm:mb-12"
           >
             <BrandLogo tone="dark" size="lg" />
           </Link>
 
-          <h1 className="cn-display animate-fade-up text-[1.85rem] leading-[1.08] tracking-[0.02em] text-white sm:text-4xl md:text-5xl lg:text-[3.15rem]">
+          <h1 className="cn-display animate-fade-up text-[1.55rem] leading-[1.1] tracking-[0.02em] text-white sm:text-4xl md:text-5xl lg:text-[3.15rem]">
             IS YOUR MARKETING LIMITING YOUR BUSINESS?
           </h1>
 
-          <p className="animate-fade-up-delay mt-6 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+          <p className="animate-fade-up-delay mt-5 max-w-2xl text-pretty text-[0.95rem] leading-relaxed text-white/70 sm:mt-6 sm:text-lg">
             Find out where your marketing budget is being wasted, and where you
             could be losing customers to competitors.
           </p>
 
-          <div className="animate-fade-up-late relative mt-10 w-full max-w-2xl overflow-hidden rounded-2xl border border-white/15 bg-[#141414] shadow-[0_0_50px_rgba(228,67,54,0.12)]">
+          <div className="animate-fade-up-late relative mt-8 w-full max-w-2xl overflow-hidden rounded-xl border border-white/15 bg-[#141414] shadow-[0_0_50px_rgba(228,67,54,0.12)] sm:mt-10 sm:rounded-2xl">
             <WistiaEmbed />
           </div>
 
-          <p className="mt-10 max-w-2xl text-base leading-relaxed text-white/68 sm:text-lg">
+          <p className="mt-8 max-w-2xl text-pretty text-[0.95rem] leading-relaxed text-white/68 sm:mt-10 sm:text-lg">
             Answer 25 simple questions to receive an AI-powered marketing audit
             and a tailored growth roadmap by email. Then discuss your findings
             directly with{" "}
@@ -54,7 +54,7 @@ export default async function HomePage({
             and founder of CNM.
           </p>
 
-          <div className="mt-12 w-full max-w-md text-left">
+          <div className="mt-10 w-full max-w-md text-left sm:mt-12">
             <CheckoutStart
               cancelled={params.cancelled === "1"}
               variant="card"

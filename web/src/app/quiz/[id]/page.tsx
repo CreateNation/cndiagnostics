@@ -19,7 +19,9 @@ export default async function QuizPage({
   let submission = await getSubmission(id);
   if (!submission) notFound();
 
-  if (sessionId && submission.status === "pending_payment") {
+  // Always run when session_id is present: verifies paid, and enqueues Meta CAPI
+  // even if the submission is already paid (deduped by purchase_${session.id}).
+  if (sessionId) {
     submission =
       (await confirmCheckoutSession(id, sessionId)) ?? submission;
   }
@@ -34,21 +36,22 @@ export default async function QuizPage({
   ].includes(submission.status);
 
   return (
-    <div className="flex min-h-full flex-col bg-[var(--cn-paper)]">
+    <div className="flex min-h-full flex-col overflow-x-hidden bg-[var(--cn-paper)]">
       <header className="sticky top-0 z-20 border-b border-[var(--cn-line)] bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-4">
-            <BrandLogo tone="light" size="md" />
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-4">
+            <BrandLogo tone="light" size="sm" />
             <span className="cn-display hidden text-[10px] tracking-[0.22em] text-[var(--cn-ink)] sm:inline">
               Growth Diagnostic
             </span>
           </Link>
-          <span className="hidden text-[11px] uppercase tracking-[0.18em] text-[var(--cn-muted)] sm:inline">
-            25 questions · ~5 minutes
+          <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[var(--cn-muted)] sm:text-[11px] sm:tracking-[0.18em]">
+            <span className="sm:hidden">25 Q · ~5 min</span>
+            <span className="hidden sm:inline">25 questions · ~5 minutes</span>
           </span>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12 md:py-16">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12 md:py-16">
         <PurchaseTracker
           sessionId={sessionId ?? submission.stripeSessionId}
           submissionId={submission.id}
