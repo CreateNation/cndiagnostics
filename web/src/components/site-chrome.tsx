@@ -1,19 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Brand assets are square canvases (1500×1500) — never force a wide aspect ratio. */
-const LOGO_PX = {
-  sm: 44,
-  md: 64,
-  lg: 108,
-} as const;
+/**
+ * Brand PNGs are 1500×1500 with transparent padding.
+ * Content bbox ≈ (122,313)–(1377,1186) → ~1255×873 (aspect ≈ 1.44).
+ * Clip a viewport to that wordmark so it doesn’t look tiny inside the square canvas.
+ */
+const WORDMARK_ASPECT = 1255 / 873;
+/** Canvas height / content height — scale so the mark fills the clip box. */
+const CANVAS_SCALE = 1500 / 873;
 
-const LOGO_CLASS = {
-  // Square brand canvases need enough pixels for the wordmark to stay legible.
-  sm: "h-11 w-11",
-  md: "h-12 w-12 sm:h-16 sm:w-16",
-  lg: "h-20 w-20 sm:h-24 sm:w-24 md:h-[6.75rem] md:w-[6.75rem]",
-} as const;
+type LogoSize = "sm" | "md" | "lg" | "footer";
+
+const LOGO_HEIGHT_CLASS: Record<LogoSize, string> = {
+  sm: "h-9 sm:h-10",
+  md: "h-12 sm:h-14",
+  lg: "h-[4.25rem] sm:h-[5.25rem] md:h-[6.5rem]",
+  // Footer: full wordmark, larger on mobile (square canvas + padding looked shrunk).
+  footer: "h-20 w-[calc(5rem*1.437)] sm:h-14 sm:w-[calc(3.5rem*1.437)]",
+};
 
 export function BrandLogo({
   tone = "dark",
@@ -21,21 +26,34 @@ export function BrandLogo({
   className = "",
 }: {
   tone?: "dark" | "light";
-  size?: "sm" | "md" | "lg";
+  size?: LogoSize;
   className?: string;
 }) {
   const lightBg = tone === "light";
-  const px = LOGO_PX[size];
 
   return (
-    <Image
-      src={lightBg ? "/brand/logo.png" : "/brand/logo-white.png"}
-      alt="Create Nation"
-      width={px}
-      height={px}
-      className={`shrink-0 object-contain ${LOGO_CLASS[size]} ${className}`}
-      priority={size === "lg"}
-    />
+    <span
+      className={`relative inline-block shrink-0 overflow-hidden ${LOGO_HEIGHT_CLASS[size]} ${className}`}
+      style={
+        size === "footer"
+          ? undefined
+          : { aspectRatio: String(WORDMARK_ASPECT) }
+      }
+    >
+      <Image
+        src={lightBg ? "/brand/logo.png" : "/brand/logo-white.png"}
+        alt="Create Nation"
+        width={1500}
+        height={1500}
+        className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+        style={{
+          height: `${CANVAS_SCALE * 100}%`,
+          width: `${CANVAS_SCALE * 100}%`,
+        }}
+        sizes="(max-width: 640px) 200px, 280px"
+        priority={size === "lg"}
+      />
+    </span>
   );
 }
 
@@ -85,9 +103,9 @@ export function SiteFooter({
           : "border-[var(--cn-line)] bg-white text-[var(--cn-muted)]"
       }`}
     >
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-2.5 px-4 py-6 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-8 sm:text-left">
-        <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-3">
-          <BrandLogo tone={dark ? "dark" : "light"} size="sm" />
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-7 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-8 sm:text-left">
+        <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:gap-3">
+          <BrandLogo tone={dark ? "dark" : "light"} size="footer" />
           <p className="cn-display text-[10px] tracking-[0.16em] sm:text-xs sm:tracking-[0.18em]">
             Create Nation © {new Date().getFullYear()}
           </p>
