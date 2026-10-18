@@ -1,23 +1,21 @@
-import Image from "next/image";
 import Link from "next/link";
 
 /**
  * Brand PNGs are 1500×1500 with transparent padding.
  * Content bbox ≈ (122,313)–(1377,1186) → ~1255×873 (aspect ≈ 1.44).
- * Clip a viewport to that wordmark so it doesn’t look tiny inside the square canvas.
+ * Clip a viewport to that wordmark so padding doesn’t make it look tiny.
  */
 const WORDMARK_ASPECT = 1255 / 873;
-/** Canvas height / content height — scale so the mark fills the clip box. */
 const CANVAS_SCALE = 1500 / 873;
 
 type LogoSize = "sm" | "md" | "lg" | "footer";
 
 const LOGO_HEIGHT_CLASS: Record<LogoSize, string> = {
-  sm: "h-9 sm:h-10",
-  md: "h-12 sm:h-14",
-  lg: "h-[4.25rem] sm:h-[5.25rem] md:h-[6.5rem]",
-  // Footer: full wordmark, larger on mobile (square canvas + padding looked shrunk).
-  footer: "h-20 w-[calc(5rem*1.437)] sm:h-14 sm:w-[calc(3.5rem*1.437)]",
+  sm: "h-10 sm:h-11",
+  md: "h-14 sm:h-16",
+  lg: "h-24 sm:h-28 md:h-32",
+  // Match hero presence on mobile — stacked wordmark needs height, not a stamp.
+  footer: "h-24 w-[calc(6rem*1.437)] sm:h-16 sm:w-[calc(4rem*1.437)]",
 };
 
 export function BrandLogo({
@@ -40,18 +38,18 @@ export function BrandLogo({
           : { aspectRatio: String(WORDMARK_ASPECT) }
       }
     >
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element -- need absolute scale clip; next/image fights this */}
+      <img
         src={lightBg ? "/brand/logo.png" : "/brand/logo-white.png"}
         alt="Create Nation"
         width={1500}
         height={1500}
-        className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+        className="pointer-events-none absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 select-none object-contain"
         style={{
           height: `${CANVAS_SCALE * 100}%`,
           width: `${CANVAS_SCALE * 100}%`,
         }}
-        sizes="(max-width: 640px) 200px, 280px"
-        priority={size === "lg"}
+        decoding="async"
       />
     </span>
   );
@@ -103,8 +101,8 @@ export function SiteFooter({
           : "border-[var(--cn-line)] bg-white text-[var(--cn-muted)]"
       }`}
     >
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-7 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-8 sm:text-left">
-        <div className="flex flex-col items-center gap-2.5 sm:flex-row sm:gap-3">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-8 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-8 sm:text-left">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-3">
           <BrandLogo tone={dark ? "dark" : "light"} size="footer" />
           <p className="cn-display text-[10px] tracking-[0.16em] sm:text-xs sm:tracking-[0.18em]">
             Create Nation © {new Date().getFullYear()}
