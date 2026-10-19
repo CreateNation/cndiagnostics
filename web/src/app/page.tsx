@@ -47,11 +47,14 @@ export default async function HomePage({
           </div>
 
           <p className="mt-8 max-w-2xl text-pretty text-[0.95rem] leading-relaxed text-white/68 sm:mt-10 sm:text-lg">
-            Answer 25 simple questions to receive an AI-powered marketing audit
-            and a tailored growth roadmap by email. Then discuss your findings
-            directly with{" "}
-            <span className="text-white">Luay Fawaz</span>, Marketing strategist
-            and founder of CNM.
+            Receive your AI-powered marketing audit and a tailored growth
+            roadmap by email after answering these 25 simple questions.
+            <br className="hidden sm:block" />
+            <span className="mt-3 block sm:mt-4">
+              Then discuss your findings directly with{" "}
+              <span className="text-white">Luay Fawaz</span>, Marketing
+              strategist and founder of CNM.
+            </span>
           </p>
 
           <div className="mt-10 w-full max-w-md text-left sm:mt-12">

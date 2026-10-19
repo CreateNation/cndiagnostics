@@ -126,19 +126,26 @@ export function CheckoutStart({
       )}
 
       <div className="mb-6">
-        <p
-          className={`cn-display text-[11px] tracking-[0.22em] ${
-            card ? "text-[var(--cn-red)]" : "text-[var(--cn-red)]"
+        <h2
+          className={`cn-display text-[1.15rem] leading-tight tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
+            card ? "text-[var(--cn-ink)]" : "text-white"
           }`}
         >
-          Start your assessment
+          Start your marketing diagnostic
+        </h2>
+        <p
+          className={`mt-2.5 text-sm font-medium leading-snug ${
+            card ? "text-[var(--cn-ink)]/80" : "text-white/75"
+          }`}
+        >
+          $9 USD · Assessment + personalised report + consultation
         </p>
         <p
-          className={`mt-2 text-sm ${
+          className={`mt-1.5 text-sm leading-snug ${
             card ? "text-[var(--cn-muted)]" : "text-white/55"
           }`}
         >
-          $9 · Personalized report by email
+          Answer based on your current setup. No preparation needed.
         </p>
       </div>
 
@@ -215,7 +222,7 @@ export function CheckoutStart({
       <button
         type="submit"
         disabled={loading}
-        className="cn-btn mt-6 w-full px-3 text-[0.8rem] leading-snug tracking-[0.04em] sm:px-6 sm:text-base"
+        className="cn-btn mt-6 w-full whitespace-normal px-3 text-[0.8rem] leading-snug tracking-[0.04em] sm:px-6 sm:text-base"
       >
         {loading ? "Opening checkout…" : "Get My Marketing Audit for $9"}
       </button>

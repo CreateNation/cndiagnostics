@@ -238,7 +238,8 @@ body {
   letter-spacing: 0.06em;
   padding: 0.9rem 1.15rem;
   border-radius: var(--radius-btn);
-  text-wrap: balance;
+  white-space: nowrap;
+  flex-wrap: nowrap;
   transition:
     background 0.2s ease,
     transform 0.2s ease,
