@@ -282,7 +282,7 @@ export function normalizeReportPages(
     }
     if (!body || /nurture|no call/i.test(body)) {
       body =
-        "Your report shows where the gap is. On a 20-minute call, we’ll walk through how CNM would close it for a business at your stage.";
+        "This report shows the gap. On a short call, we walk through how to close it.";
     }
   } else {
     if (/book.*call|strategy call/i.test(headline)) {
@@ -290,7 +290,7 @@ export function normalizeReportPages(
     }
     if (!body || /book.*call/i.test(body)) {
       body =
-        "Based on your current stage, the best next step is practical growth resources by email—not a strategy call yet.";
+        "At your stage, email tips are the better next step — not a call yet.";
     }
   }
 

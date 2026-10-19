@@ -1,3 +1,5 @@
+import { isTrackingDisabled } from "@/lib/runtime-flags";
+
 export type AnalyticsIds = {
   gtmId: string | null;
   ga4Id: string | null;
@@ -8,8 +10,20 @@ export type AnalyticsIds = {
 };
 
 export function getAnalyticsIds(): AnalyticsIds {
+  if (isTrackingDisabled()) {
+    return {
+      gtmId: null,
+      ga4Id: null,
+      googleAdsId: null,
+      metaPixelId: null,
+      tiktokPixelId: null,
+      linkedInPartnerId: null,
+    };
+  }
+
+  // No hardcoded production defaults — blank env = no tags.
   return {
-    gtmId: process.env.NEXT_PUBLIC_GTM_ID?.trim() || "GTM-K53HDXHB",
+    gtmId: process.env.NEXT_PUBLIC_GTM_ID?.trim() || null,
     ga4Id: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim() || null,
     googleAdsId: process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() || null,
     metaPixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || null,
@@ -20,6 +34,7 @@ export function getAnalyticsIds(): AnalyticsIds {
 }
 
 export function hasAnyAnalytics(ids: AnalyticsIds = getAnalyticsIds()): boolean {
+  if (isTrackingDisabled()) return false;
   return Boolean(
     ids.gtmId ||
       ids.ga4Id ||

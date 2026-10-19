@@ -35,9 +35,16 @@ Hard rules:
 - cover.date must be a full human date (e.g. "7 September 2026"), never just a year.
 - strengths/risks/evidence/leakPoints/priority arrays/quickWins must be plain strings, never objects.
 - ninetyDayPath.weeks must contain exactly 3 items.
-- Tone: direct, specific, consulting-grade. No hype. No guaranteed ROI.
+- READABILITY (critical — users skim, they do not read essays):
+  - Use short sentences. Prefer 8–16 words. Never stack long paragraphs.
+  - Use plain words a busy UAE business owner understands. Avoid jargon like "constraint", "compounding", "productize", "founder-fragile", "acquisition loop" unless you explain in simple words.
+  - evidence / explanation / diagnosis / narrative / summary / body: max 2 short sentences each.
+  - strengths, risks, leakPoints, priority arrays, quickWins: max 8–14 words per item.
+  - ninetyDayPath focus lines: one short sentence each.
+  - Prefer concrete actions ("Fix your offer page CTA") over abstract analysis.
+- Tone: direct, specific, friendly-professional. No hype. No guaranteed ROI.
 - Scope boundary must include: "This is a preliminary marketing diagnostic, not a full operational or financial audit."
-- Every paragraph must reference at least 2 concrete inputs from the user's answers.
+- Tie claims to the user's answers, but keep the wording simple.
 - If cta is book_call: invite a strategy call; never mention Priority/Nurture/Self-Serve.
 - If cta is email_nurture: email nurture only — NO call CTA.
 - Never invent metrics. Never expose closer-only qualification language.`;
@@ -95,96 +102,92 @@ export function mockReportPages(
     stage: {
       stageName: scoring.stageName,
       stageId: scoring.adjustedStage,
-      evidence: `Based on your reported revenue band and how sales are currently closed, you sit in ${scoring.stageName} (${stage.revenueLabel}). Confidence: ${scoring.confidence}.`,
+      evidence: `You are in ${scoring.stageName} (${stage.revenueLabel}). We are ${scoring.confidence} sure based on your answers.`,
       confidence: scoring.confidence,
       scopeBoundary:
         "This is a preliminary marketing diagnostic, not a full operational or financial audit.",
     },
     scorecard: {
       dimensions: scoring.dimensions,
-      summary: `Your weakest area right now is ${DIMENSION_LABELS[weak]} (${scoring.dimensions[weak]}/100), which is the primary constraint on moving past ${scoring.stageName}.`,
+      summary: `${DIMENSION_LABELS[weak]} is your weakest score (${scoring.dimensions[weak]}/100). Fix this to move past ${scoring.stageName}.`,
     },
     bottleneck: {
       title: stage.bottleneck,
-      explanation: `At ${scoring.stageName}, the typical constraint is ${stage.bottleneck.toLowerCase()}. Your answers on ${DIMENSION_LABELS[weak]} and funnel clarity point to this as the binding constraint—not a generic marketing checklist.`,
+      explanation: `At ${scoring.stageName}, the usual stuck point is ${stage.bottleneck.toLowerCase()}. Your answers point here first.`,
       evidence: [
-        `Revenue stage signal: ${stage.revenueLabel}`,
-        `Weakest dimension: ${DIMENSION_LABELS[weak]} at ${scoring.dimensions[weak]}/100`,
-        `Industry context: ${industry}`,
+        `Stage: ${stage.revenueLabel}`,
+        `Weakest: ${DIMENSION_LABELS[weak]} (${scoring.dimensions[weak]}/100)`,
+        `Industry: ${industry}`,
       ],
     },
     strengthsRisks: {
       strengths: Object.entries(scoring.dimensions)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 2)
-        .map(
-          ([k, v]) =>
-            `${DIMENSION_LABELS[k]} scores ${v}/100 — protect and productize this advantage.`,
-        ),
+        .map(([k, v]) => `${DIMENSION_LABELS[k]} is strong (${v}/100). Keep it.`),
       risks: [
-        `Staying in ${scoring.stageName} without fixing ${DIMENSION_LABELS[weak]} keeps growth founder-fragile.`,
-        `Objection signal: ${scoring.objection ?? "unspecified"} — address this before scaling spend.`,
+        `Ignoring ${DIMENSION_LABELS[weak]} keeps you stuck in ${scoring.stageName}.`,
+        `Main objection: ${scoring.objection ?? "unclear"} — fix before you spend more.`,
       ],
     },
     leak: {
-      diagnosis: `The leak in your marketing-to-sales path is concentrated where ${DIMENSION_LABELS[weak]} and Funnel & Conversion (${scoring.dimensions.funnel}/100) intersect.`,
+      diagnosis: `Leads drop where ${DIMENSION_LABELS[weak]} meets your funnel (${scoring.dimensions.funnel}/100).`,
       leakPoints: [
-        `Funnel documentation score implies drop-off visibility is limited.`,
-        `Content/demand and systems scores suggest acquisition is not yet a closed loop.`,
+        `You cannot see where people drop off clearly.`,
+        `Marketing and sales are not one clear path yet.`,
       ],
     },
     nextStage: {
       milestone: stage.nextMilestone,
-      whatItLooksLike: `Crossing into the next stage means ${stage.nextMilestone.toLowerCase()}, with marketing activities no longer depending on ad-hoc effort.`,
+      whatItLooksLike: `Next stage means ${stage.nextMilestone.toLowerCase()}. Marketing stops being guesswork.`,
     },
     costOfStaying: {
-      narrative: `Every month in ${scoring.stageName} without closing the ${DIMENSION_LABELS[weak]} gap compounds opportunity cost—missed compounding from a clearer offer, funnel, and tracking system.`,
-      note: "Directional only — no fabricated AED figures.",
+      narrative: `Each month stuck in ${scoring.stageName} costs you time and missed sales. A clearer offer and funnel would help.`,
+      note: "Estimate only — no made-up AED numbers.",
     },
     priorityMatrix: {
       now: [
-        `Clarify the single offer tied to your most profitable customer type.`,
-        `Map the prospect journey and name the largest drop-off stage.`,
+        `Pick one clear offer for your best customers.`,
+        `Write the steps from first contact to payment.`,
       ],
       next: [
-        `Align content and paid activity to one CTA.`,
-        `Install revenue-linked tracking (CAC / CPL / ROI).`,
+        `Point all content and ads to one CTA.`,
+        `Track cost per lead and close rate.`,
       ],
-      later: [`Expand channels only after conversion math is stable.`],
+      later: [`Add new channels only after conversion is steady.`],
       avoid: [
-        `Scaling ad spend before the bottleneck is diagnosed.`,
-        `Adding vanity content that only speaks to warm audiences.`,
+        `Do not raise ad spend before you find the leak.`,
+        `Skip content that only talks to people who already know you.`,
       ],
     },
     ninetyDayPath: {
       weeks: [
-        { label: "Days 1–30", focus: "Diagnose leak, lock ICP and offer framing." },
-        { label: "Days 31–60", focus: "Install funnel process and tracking." },
-        { label: "Days 61–90", focus: "Run one acquisition channel with measured conversion." },
+        { label: "Days 1–30", focus: "Find the leak. Lock who you sell to and what you sell." },
+        { label: "Days 31–60", focus: "Build a simple funnel and start tracking." },
+        { label: "Days 61–90", focus: "Run one channel and measure results." },
       ],
-      assumptions:
-        "Assumes you can dedicate decision-maker time weekly; not a locked implementation plan.",
+      assumptions: "Works if a decision-maker spends time each week. Not a fixed project plan.",
     },
     quickWins: [
-      "Write a one-sentence differentiation answer and test it on the next 5 sales conversations.",
-      "List every step from first touch to payment on one page.",
-      "Pick one revenue metric (CPL or close rate) and track it this week.",
-      "Pause any ad creative without a single clear CTA.",
-      "Identify your top 20% most profitable clients and describe them in 5 traits.",
-      "Book 30 minutes to review where leads go quiet after inquiry.",
-      "Remove one service-list bullet from your offer page; replace with an outcome.",
+      "Write one clear offer line. Test it in 5 sales chats.",
+      "List every step from first click to payment.",
+      "Pick one number (leads or close rate) and track it.",
+      "Pause ads with no clear CTA.",
+      "List 5 traits of your best clients.",
+      "Find where leads go quiet after they ask.",
+      "Replace one service bullet with a clear result.",
     ],
     nextStep:
       scoring.cta === "book_call"
         ? {
             cta: "book_call",
             headline: "Book your strategy call",
-            body: "Your report shows where the gap is. On a 20-minute call, we’ll walk through how CNM would close it for a business at your stage.",
+            body: "This report shows the gap. On a short call, we walk through how to close it.",
           }
         : {
             cta: "email_nurture",
             headline: "Keep growing with CNM resources",
-            body: "Based on your current stage, the best next step is practical growth resources by email—not a strategy call yet. We’ll stay useful until you’re ready for the next level.",
+            body: "At your stage, email tips are the better next step — not a call yet.",
           },
   };
 }

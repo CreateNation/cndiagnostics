@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:sandbox": "NEXT_PUBLIC_DISABLE_TRACKING=true DISABLE_TRACKING=true DISABLE_GHL=true DEV_BYPASS_PAYMENT=true next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

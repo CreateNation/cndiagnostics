@@ -21,6 +21,7 @@ import {
 } from "./ghl";
 import { updateSubmission } from "./store";
 import { DIAGNOSTIC_PURCHASE_VALUE } from "./analytics/config";
+import { isGhlDisabled } from "./runtime-flags";
 
 function formatAnswerValue(
   value: AnswerValue | undefined,
@@ -115,6 +116,9 @@ export async function syncCheckoutLeadToGhl(
   opportunityId: string | null;
   error?: string;
 }> {
+  if (isGhlDisabled()) {
+    return { contactId: null, opportunityId: null, error: "GHL disabled" };
+  }
   if (!submission.email) {
     return {
       contactId: null,
@@ -204,6 +208,9 @@ export async function syncPaidDiagnosticToGhl(
   opportunityId: string | null;
   error?: string;
 }> {
+  if (isGhlDisabled()) {
+    return { contactId: null, opportunityId: null, error: "GHL disabled" };
+  }
   if (!submission.email) {
     return {
       contactId: null,
@@ -295,6 +302,13 @@ export async function syncBookCallStageToGhl(
   opportunityId: string | null;
   error?: string;
 }> {
+  if (isGhlDisabled()) {
+    return {
+      contactId: submission.ghlContactId,
+      opportunityId: submission.ghlOpportunityId,
+      error: "GHL disabled",
+    };
+  }
   if (!submission.email || !isGhlApiConfigured()) {
     return {
       contactId: submission.ghlContactId,
@@ -367,6 +381,9 @@ export async function syncDiagnosticLeadToGhl(
   opportunityId: string | null;
   error?: string;
 }> {
+  if (isGhlDisabled()) {
+    return { contactId: null, opportunityId: null, error: "GHL disabled" };
+  }
   if (!submission.email || !submission.scoring || !submission.report) {
     return {
       contactId: null,

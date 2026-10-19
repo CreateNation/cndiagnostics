@@ -1,3 +1,4 @@
+import { isTrackingDisabled } from "@/lib/runtime-flags";
 import {
   DIAGNOSTIC_CURRENCY,
   DIAGNOSTIC_PURCHASE_VALUE,
@@ -37,6 +38,7 @@ function tiktokEvent(name: string, payload?: TrackPayload) {
 
 /** Capture UTMs once and reuse for later events */
 export function captureAttribution(): void {
+  if (isTrackingDisabled()) return;
   if (typeof window === "undefined") return;
   try {
     const params = new URLSearchParams(window.location.search);
@@ -78,6 +80,7 @@ export function getAttribution(): Record<string, string> {
  * Native Meta PageView is intentionally omitted (GTM owns Meta).
  */
 export function trackPageView(path: string): void {
+  if (isTrackingDisabled()) return;
   const ids = getAnalyticsIds();
   const payload = { page_path: path, page_location: window.location.href };
 
@@ -102,6 +105,7 @@ export function trackPageView(path: string): void {
  * Optional native gtag / TikTok / LinkedIn when env IDs are set without GTM Meta.
  */
 export function track(event: string, payload: TrackPayload = {}): void {
+  if (isTrackingDisabled()) return;
   const ids = getAnalyticsIds();
   const enriched = { ...getAttribution(), ...payload };
 

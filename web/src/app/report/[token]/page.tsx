@@ -7,27 +7,28 @@ import { NinetyDayGate } from "@/components/ninety-day-gate";
 import { normalizeReportPages } from "@/lib/report/normalize";
 import { ReportViewTracker } from "@/components/analytics/report-view-tracker";
 import { TrackedLink } from "@/components/analytics/tracked-link";
+import {
+  DimensionBars,
+  DimensionRadar,
+  ScoreDonut,
+} from "@/components/report/score-charts";
+import {
+  ChipRow,
+  CostBanner,
+  LeakSpotlight,
+  MilestoneCard,
+  NoteChip,
+  ScanLead,
+  VisualList,
+} from "@/components/report/scannable-blocks";
+import { SoftCta } from "@/components/report/soft-cta";
+import { toScanBlock } from "@/lib/report/scannable";
+import { isSandboxMode } from "@/lib/runtime-flags";
 
-const DIM_LABELS: Record<string, string> = {
-  audience: "Audience & Positioning",
-  offer: "Offer Strength",
-  funnel: "Funnel & Conversion",
-  content: "Content & Demand",
-  systems: "Systems & Tracking",
-};
-
-function List({ items }: { items: string[] }) {
-  if (!items.length) return null;
-  return (
-    <ul className="mt-4 space-y-3">
-      {items.map((item) => (
-        <li key={item} className="flex gap-3 text-[var(--cn-muted)]">
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-[var(--cn-red)]" />
-          <span className="leading-relaxed">{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
+function avgScore(dims: Record<string, number>): number {
+  const vals = Object.values(dims);
+  if (!vals.length) return 0;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
 export default async function ClientReportPage({
@@ -44,6 +45,12 @@ export default async function ClientReportPage({
     submission.scoring,
   );
   const cta = pages.nextStep.cta;
+  // Production: only Priority/Nurture (book_call). Sandbox: always show so you can preview CTAs.
+  const bookCall = cta === "book_call" || isSandboxMode();
+  const bookHref = bookingUrl();
+  const sid = submission.id;
+  const overall = avgScore(pages.scorecard.dimensions);
+  const nextBody = toScanBlock(pages.nextStep.body);
 
   return (
     <div className="min-h-full overflow-x-hidden bg-[var(--cn-paper)]">
@@ -58,9 +65,21 @@ export default async function ClientReportPage({
           <Link href="/" className="shrink-0">
             <BrandLogo size="sm" />
           </Link>
-          <span className="cn-display truncate text-[9px] tracking-[0.16em] text-white/45 sm:text-[10px] sm:tracking-[0.2em]">
-            Growth Diagnostic
-          </span>
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            {bookCall ? (
+              <TrackedLink
+                href={bookHref}
+                source="report_header"
+                submissionId={sid}
+                className="cn-display hidden truncate text-[9px] tracking-[0.16em] text-white/55 transition hover:text-white sm:inline sm:tracking-[0.2em]"
+              >
+                Talk to Luay
+              </TrackedLink>
+            ) : null}
+            <span className="cn-display truncate text-[9px] tracking-[0.16em] text-white/45 sm:text-[10px] sm:tracking-[0.2em]">
+              Growth Diagnostic
+            </span>
+          </div>
         </div>
 
         <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6 sm:pb-14 sm:pt-8">
@@ -74,167 +93,253 @@ export default async function ClientReportPage({
             aria-hidden
             className="mt-5 h-[3px] w-16 bg-[var(--cn-red)] sm:mt-6 sm:w-20"
           />
-          <p className="mt-5 text-base text-white/58 sm:mt-6 sm:text-lg">
-            Stage:{" "}
-            <span className="text-white">{pages.cover.stageName}</span>
-            <span className="mx-2 text-white/25">·</span>
-            {pages.cover.date}
-          </p>
-          <a
-            href={`/api/report/${token}/pdf`}
-            className="cn-btn mt-6 inline-flex w-full justify-center sm:mt-8 sm:w-auto"
-          >
-            Download PDF
-            <span aria-hidden>↗</span>
-          </a>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <span className="rounded-full bg-white/10 px-3.5 py-1.5 text-sm text-white">
+              {pages.cover.stageName}
+            </span>
+            <span className="rounded-full bg-white/10 px-3.5 py-1.5 text-sm text-white/70">
+              {pages.cover.date}
+            </span>
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:items-center">
+            {bookCall ? (
+              <div>
+                <TrackedLink
+                  href={bookHref}
+                  source="report_hero"
+                  submissionId={sid}
+                  className="cn-btn w-full whitespace-nowrap sm:w-auto"
+                >
+                  Book a strategy call
+                  <span aria-hidden>↗</span>
+                </TrackedLink>
+                <p className="mt-2 text-center text-[11px] text-white/45 sm:text-left">
+                  Free · 20 min · No obligation
+                </p>
+              </div>
+            ) : null}
+            <a
+              href={`/api/report/${token}/pdf`}
+              className="cn-btn-ghost inline-flex w-full justify-center whitespace-nowrap border-white/25 sm:w-auto"
+            >
+              Download PDF
+              <span aria-hidden>↗</span>
+            </a>
+          </div>
         </div>
       </header>
 
-      <article className="mx-auto max-w-3xl space-y-10 px-4 py-10 sm:space-y-14 sm:px-6 sm:py-14">
-        <Section title="Your stage & what it means">
-          <p className="text-lg leading-relaxed">{pages.stage.evidence}</p>
-          <p className="mt-5 border-l-2 border-[var(--cn-red)] pl-4 text-sm leading-relaxed text-[var(--cn-muted)]">
-            {pages.stage.scopeBoundary}
-          </p>
-        </Section>
+      <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
+        <ReportSection index="01" title="Your stage" accent>
+          <ChipRow
+            items={[
+              { label: "Stage", value: pages.stage.stageName },
+              {
+                label: "Confidence",
+                value: pages.stage.confidence,
+              },
+            ]}
+          />
+          <div className="mt-6">
+            <ScanLead text={pages.stage.evidence} />
+          </div>
+          <NoteChip text={pages.stage.scopeBoundary} />
+        </ReportSection>
 
-        <Section title="Dimension scorecard">
-          <p className="mb-8 leading-relaxed text-[var(--cn-muted)]">
-            {pages.scorecard.summary}
-          </p>
-          <ul className="space-y-6">
-            {Object.entries(pages.scorecard.dimensions).map(([key, score]) => (
-              <li key={key}>
-                <div className="mb-2 flex items-end justify-between gap-4">
-                  <span className="cn-display text-sm tracking-[0.08em] text-[var(--cn-ink)]">
-                    {DIM_LABELS[key] ?? key}
-                  </span>
-                  <span className="cn-display text-lg text-[var(--cn-red)]">
-                    {score}
-                    <span className="text-sm text-[var(--cn-muted)]">/100</span>
-                  </span>
-                </div>
-                <div className="h-[4px] overflow-hidden rounded-full bg-[var(--cn-line)]">
-                  <div
-                    className="h-full origin-left rounded-full bg-[var(--cn-red)]"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, score))}%`,
-                    }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section title="Primary bottleneck">
-          <h3 className="cn-display text-2xl leading-tight text-[var(--cn-ink)] sm:text-3xl">
-            {pages.bottleneck.title}
-          </h3>
-          <p className="mt-4 leading-relaxed">{pages.bottleneck.explanation}</p>
-          <List items={pages.bottleneck.evidence} />
-        </Section>
-
-        <Section title="Strengths & risks">
-          <div className="grid gap-10 sm:grid-cols-2">
-            <div>
-              <h4 className="cn-display text-xs tracking-[0.2em] text-[var(--cn-red)]">
-                Strengths
-              </h4>
-              <List items={pages.strengthsRisks.strengths} />
+        <ReportSection index="02" title="Your scores">
+          <ScanLead text={pages.scorecard.summary} />
+          <div className="mt-8 grid items-center gap-10 sm:grid-cols-[minmax(0,11rem)_1fr]">
+            <div className="flex flex-col items-center gap-6">
+              <ScoreDonut score={overall} label="Overall" />
+              <DimensionRadar dimensions={pages.scorecard.dimensions} />
             </div>
-            <div>
-              <h4 className="cn-display text-xs tracking-[0.2em] text-[var(--cn-red)]">
-                Risks
+            <DimensionBars dimensions={pages.scorecard.dimensions} />
+          </div>
+        </ReportSection>
+
+        <SoftCta
+          enabled={bookCall}
+          href={bookHref}
+          submissionId={sid}
+          source="report_after_scores"
+          variant="whisper"
+          eyebrow="Need a second pair of eyes?"
+          title="We can walk through these scores with you in 20 minutes."
+          body="No pitch deck — just clarity on what to fix first."
+          buttonLabel="Book my free call"
+        />
+
+        <ReportSection index="03" title="Main problem" accent>
+          <p className="cn-display text-2xl leading-tight text-[var(--cn-red)] sm:text-3xl">
+            {pages.bottleneck.title}
+          </p>
+          <div className="mt-5">
+            <ScanLead text={pages.bottleneck.explanation} />
+          </div>
+          <VisualList items={pages.bottleneck.evidence} tone="warn" max={3} />
+        </ReportSection>
+
+        <ReportSection index="04" title="What helps · what hurts">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[0.75rem] border border-[var(--cn-line)] bg-white px-4 py-4">
+              <h4 className="cn-display text-[11px] tracking-[0.2em] text-emerald-700">
+                Helps you
               </h4>
-              <List items={pages.strengthsRisks.risks} />
+              <VisualList
+                items={pages.strengthsRisks.strengths}
+                tone="good"
+                max={3}
+              />
+            </div>
+            <div className="rounded-[0.75rem] border border-[var(--cn-line)] bg-[color-mix(in_srgb,var(--cn-red)_5%,white)] px-4 py-4">
+              <h4 className="cn-display text-[11px] tracking-[0.2em] text-[var(--cn-red)]">
+                Holds you back
+              </h4>
+              <VisualList
+                items={pages.strengthsRisks.risks}
+                tone="warn"
+                max={3}
+              />
             </div>
           </div>
-        </Section>
+        </ReportSection>
 
-        <Section title="Where the leak is">
-          <p className="leading-relaxed">{pages.leak.diagnosis}</p>
-          <List items={pages.leak.leakPoints} />
-        </Section>
+        <LeakSpotlight
+          index="05"
+          diagnosis={pages.leak.diagnosis}
+          leakPoints={pages.leak.leakPoints}
+        />
 
-        <Section title="What next stage looks like">
-          <p className="cn-display text-xl text-[var(--cn-ink)]">
-            {pages.nextStage.milestone}
-          </p>
-          <p className="mt-3 leading-relaxed text-[var(--cn-muted)]">
-            {pages.nextStage.whatItLooksLike}
-          </p>
-        </Section>
+        <SoftCta
+          enabled={bookCall}
+          href={bookHref}
+          submissionId={sid}
+          source="report_after_leak"
+          variant="card"
+          eyebrow="You found the leak"
+          title="Want help closing it?"
+          body="Luay will map a simple plan for your stage — on a complimentary call."
+          buttonLabel="Book my free call"
+        />
 
-        <Section title="Cost of staying here">
-          <p className="leading-relaxed">{pages.costOfStaying.narrative}</p>
-          <p className="mt-4 text-sm text-[var(--cn-muted)]">
-            {pages.costOfStaying.note}
-          </p>
-        </Section>
+        <ReportSection index="06" title="What “better” looks like">
+          <MilestoneCard
+            title={pages.nextStage.milestone}
+            detail={pages.nextStage.whatItLooksLike}
+          />
+        </ReportSection>
 
-        <Section title="Priority matrix">
-          <div className="grid gap-8 sm:grid-cols-2">
+        <ReportSection index="07" title="Cost of waiting" accent>
+          <CostBanner
+            narrative={pages.costOfStaying.narrative}
+            note={pages.costOfStaying.note}
+          />
+        </ReportSection>
+
+        <SoftCta
+          enabled={bookCall}
+          href={bookHref}
+          submissionId={sid}
+          source="report_after_cost"
+          variant="accent"
+          eyebrow="Ready when you are"
+          title="A short call often saves months of trial and error."
+          body="Bring this report. We’ll turn it into next steps."
+          buttonLabel="Get my plan on a call"
+        />
+
+        <ReportSection index="08" title="Do this · skip that">
+          <div className="grid gap-3 sm:grid-cols-2">
             {(
               [
-                ["Now", pages.priorityMatrix.now],
-                ["Next", pages.priorityMatrix.next],
-                ["Later", pages.priorityMatrix.later],
-                ["Avoid", pages.priorityMatrix.avoid],
+                ["Do now", pages.priorityMatrix.now, true],
+                ["Do next", pages.priorityMatrix.next, false],
+                ["Later", pages.priorityMatrix.later, false],
+                ["Skip", pages.priorityMatrix.avoid, false],
               ] as const
-            ).map(([label, items]) => (
-              <div key={label}>
-                <h4 className="cn-display text-xs tracking-[0.2em] text-[var(--cn-red)]">
+            ).map(([label, items, hot]) => (
+              <div
+                key={label}
+                className={`rounded-[0.75rem] border px-4 py-4 ${
+                  hot
+                    ? "border-[var(--cn-red)]/40 bg-[color-mix(in_srgb,var(--cn-red)_7%,white)]"
+                    : "border-[var(--cn-line)] bg-white"
+                }`}
+              >
+                <h4 className="cn-display text-[11px] tracking-[0.2em] text-[var(--cn-red)]">
                   {label}
                 </h4>
-                <List items={items} />
+                <VisualList items={items} max={3} />
               </div>
             ))}
           </div>
-        </Section>
+        </ReportSection>
 
-        <Section title="Directional 90-day path">
+        <ReportSection index="09" title="90-day path" accent>
           <NinetyDayGate
             bookingHref={bookingUrl()}
             submissionId={submission.id}
           >
-            <ul className="space-y-6">
-              {pages.ninetyDayPath.weeks.map((w, i) => (
-                <li key={w.label} className="flex gap-4">
-                  <span className="cn-display mt-0.5 text-sm text-[var(--cn-red)]">
+            <ol className="grid gap-3">
+              {pages.ninetyDayPath.weeks.map((w, i) => {
+                const focus = toScanBlock(w.focus);
+                return (
+                  <li
+                    key={w.label}
+                    className="flex gap-4 rounded-[0.75rem] border border-[var(--cn-line)] bg-white px-4 py-4"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--cn-red)] cn-display text-xs text-white">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="cn-display text-sm text-[var(--cn-ink)]">
+                        {w.label}
+                      </p>
+                      <p className="mt-1 text-[0.95rem] leading-snug text-[var(--cn-ink)]/80">
+                        {focus.lead || w.focus}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+            <NoteChip text={pages.ninetyDayPath.assumptions} />
+          </NinetyDayGate>
+        </ReportSection>
+
+        <ReportSection index="10" title="This week">
+          <ol className="grid gap-2.5 sm:grid-cols-2">
+            {pages.quickWins.slice(0, 6).map((w, i) => {
+              const line = toScanBlock(w).lead || w;
+              return (
+                <li
+                  key={w}
+                  className="flex gap-3 rounded-[0.65rem] border border-[var(--cn-line)] bg-white px-3.5 py-3"
+                >
+                  <span className="cn-display text-sm text-[var(--cn-red)]">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <div>
-                    <p className="cn-display text-base text-[var(--cn-ink)]">
-                      {w.label}
-                    </p>
-                    <p className="mt-1 leading-relaxed text-[var(--cn-muted)]">
-                      {w.focus}
-                    </p>
-                  </div>
+                  <span className="text-[0.95rem] leading-snug text-[var(--cn-ink)]">
+                    {line}
+                  </span>
                 </li>
-              ))}
-            </ul>
-            <p className="mt-6 text-sm text-[var(--cn-muted)]">
-              {pages.ninetyDayPath.assumptions}
-            </p>
-          </NinetyDayGate>
-        </Section>
-
-        <Section title="7-day quick wins">
-          <ol className="space-y-4">
-            {pages.quickWins.map((w, i) => (
-              <li key={w} className="flex gap-4">
-                <span className="cn-display text-sm text-[var(--cn-red)]">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="leading-relaxed text-[var(--cn-ink)]">{w}</span>
-              </li>
-            ))}
+              );
+            })}
           </ol>
-        </Section>
+        </ReportSection>
 
-        <section className="relative overflow-hidden rounded-[1rem] bg-[var(--cn-charcoal)] px-6 py-10 text-white sm:px-10">
+        <SoftCta
+          enabled={bookCall}
+          href={bookHref}
+          submissionId={sid}
+          source="report_before_footer"
+          variant="whisper"
+          eyebrow="Prefer a guided plan?"
+          title="We can prioritise this week’s list with you."
+          buttonLabel="Book my free call"
+        />
+
+        <section className="relative mt-4 overflow-hidden rounded-[1rem] bg-[var(--cn-charcoal)] px-6 py-10 text-white sm:mt-6 sm:px-10">
           <div
             aria-hidden
             className="cn-arc-pattern pointer-events-none absolute inset-0 opacity-60"
@@ -246,24 +351,39 @@ export default async function ClientReportPage({
             <h2 className="cn-display mt-3 text-3xl leading-tight sm:text-4xl">
               {pages.nextStep.headline}
             </h2>
-            <p className="mt-4 max-w-xl leading-relaxed text-white/62">
-              {pages.nextStep.body}
-            </p>
-            {cta === "book_call" ? (
-              <TrackedLink
-                href={bookingUrl()}
-                className="cn-btn mt-8 inline-flex"
-                source="report_footer"
-                submissionId={submission.id}
-              >
-                Book Your Consultation Call With Luay Fawaz
-                <span aria-hidden>↗</span>
-              </TrackedLink>
-            ) : (
-              <p className="mt-8 text-sm text-white/50">
-                No call CTA at this stage — nurture resources follow by email.
+            {nextBody.lead ? (
+              <p className="mt-4 max-w-xl text-base leading-snug text-white/70">
+                {nextBody.lead}
               </p>
-            )}
+            ) : null}
+            {nextBody.bullets.length > 0 ? (
+              <ul className="mt-4 max-w-xl space-y-2">
+                {nextBody.bullets.map((b) => (
+                  <li key={b} className="flex gap-2 text-sm text-white/55">
+                    <span aria-hidden className="text-[var(--cn-red)]">
+                      →
+                    </span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {bookCall ? (
+              <div className="mt-8">
+                <TrackedLink
+                  href={bookHref}
+                  className="cn-btn w-full whitespace-nowrap sm:w-auto"
+                  source="report_footer"
+                  submissionId={sid}
+                >
+                  Book a call with Luay Fawaz
+                  <span aria-hidden>↗</span>
+                </TrackedLink>
+                <p className="mt-2 text-center text-[11px] text-white/45 sm:text-left">
+                  Free · 20 min · No obligation
+                </p>
+              </div>
+            ) : null}
           </div>
         </section>
       </article>
@@ -272,19 +392,40 @@ export default async function ClientReportPage({
   );
 }
 
-function Section({
+function ReportSection({
+  index,
   title,
   children,
+  accent = false,
 }: {
+  index: string;
   title: string;
   children: React.ReactNode;
+  accent?: boolean;
 }) {
   return (
-    <section className="border-t border-[var(--cn-line)] pt-10">
-      <h2 className="cn-display text-2xl tracking-wide text-[var(--cn-ink)] sm:text-3xl">
-        {title}
-      </h2>
-      <div className="mt-5 text-[var(--cn-ink)]">{children}</div>
+    <section
+      className={`mb-5 scroll-mt-6 rounded-[1rem] border border-[var(--cn-line)] px-5 py-7 sm:mb-6 sm:px-8 sm:py-9 ${
+        accent
+          ? "bg-white shadow-[0_1px_0_rgba(14,14,14,0.04)]"
+          : "bg-[color-mix(in_srgb,var(--cn-paper)_55%,white)]"
+      }`}
+    >
+      <header className="mb-6 flex items-start gap-4 border-b border-[var(--cn-line)] pb-5">
+        <span className="cn-display mt-1 text-xs tracking-[0.2em] text-[var(--cn-red)]">
+          {index}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="cn-display text-xl leading-tight tracking-wide text-[var(--cn-ink)] sm:text-2xl">
+            {title}
+          </h2>
+          <div
+            aria-hidden
+            className="mt-3 h-[2px] w-10 bg-[var(--cn-red)]"
+          />
+        </div>
+      </header>
+      <div className="text-[var(--cn-ink)]">{children}</div>
     </section>
   );
 }

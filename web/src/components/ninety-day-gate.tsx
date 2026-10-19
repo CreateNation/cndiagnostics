@@ -35,7 +35,7 @@ export function NinetyDayGate({
 
           <TrackedLink
             href={bookingHref}
-            className="cn-btn mt-6 w-full sm:w-auto"
+            className="cn-btn mt-6 w-full whitespace-nowrap sm:w-auto"
             source="ninety_day_gate"
             submissionId={submissionId}
           >

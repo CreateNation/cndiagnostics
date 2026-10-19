@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import type { Submission } from "@/lib/types";
+import { isTrackingDisabled } from "@/lib/runtime-flags";
 import { hashEmail, hashPhone } from "./hash";
 import {
   purchaseEventId,
@@ -20,6 +21,8 @@ const LOCK_TTL_SEC = 90;
 const MAX_ATTEMPTS = 12;
 
 function pixelId(): string {
+  // Never fall back to the production dataset when tracking is disabled.
+  if (isTrackingDisabled()) return "";
   return (
     process.env.META_PIXEL_ID?.trim() ||
     process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ||
@@ -237,6 +240,12 @@ export async function enqueueMetaPurchase(input: {
   submission: Submission;
 }): Promise<{ eventId: string; outcome: string; error?: string }> {
   try {
+    if (isTrackingDisabled()) {
+      return {
+        eventId: purchaseEventId(input.session.id),
+        outcome: "skipped_tracking_disabled",
+      };
+    }
     if (!isSessionPaid(input.session)) {
       return { eventId: "", outcome: "not_paid" };
     }
