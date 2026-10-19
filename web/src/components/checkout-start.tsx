@@ -126,22 +126,37 @@ export function CheckoutStart({
       )}
 
       <div className="mb-6">
-        <h2
-          className={`cn-display text-[1.15rem] leading-tight tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
-            card ? "text-[var(--cn-ink)]" : "text-white"
-          }`}
-        >
-          Start your marketing diagnostic
-        </h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2
+            className={`cn-display min-w-0 text-[1.15rem] leading-[1.15] tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
+              card ? "text-[var(--cn-ink)]" : "text-white"
+            }`}
+          >
+            Start your
+            <br />
+            marketing diagnostic
+          </h2>
+          <span
+            className="cn-display shrink-0 text-[1.15rem] leading-[1.15] tracking-[0.06em] text-[var(--cn-red)] sm:text-xl sm:tracking-[0.08em]"
+            aria-label="9 US dollars"
+          >
+            $9
+          </span>
+        </div>
+        <ul className="mt-3 flex flex-col gap-1.5 text-sm font-medium leading-snug text-[#15803d] sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+          {(
+            ["Assessment", "Personalised report", "Consultation"] as const
+          ).map((item) => (
+            <li key={item} className="flex items-center gap-1.5">
+              <span aria-hidden className="text-base leading-none">
+                ✓
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
         <p
-          className={`mt-2.5 text-sm font-medium leading-snug ${
-            card ? "text-[var(--cn-ink)]/80" : "text-white/75"
-          }`}
-        >
-          $9 USD · Assessment + personalised report + consultation
-        </p>
-        <p
-          className={`mt-1.5 text-sm leading-snug ${
+          className={`mt-2.5 text-sm leading-snug ${
             card ? "text-[var(--cn-muted)]" : "text-white/55"
           }`}
         >
