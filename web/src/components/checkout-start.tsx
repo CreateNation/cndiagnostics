@@ -126,7 +126,7 @@ export function CheckoutStart({
       )}
 
       <div className="mb-6">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h2
             className={`cn-display min-w-0 text-[1.15rem] leading-[1.15] tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
               card ? "text-[var(--cn-ink)]" : "text-white"
@@ -137,7 +137,7 @@ export function CheckoutStart({
             marketing diagnostic
           </h2>
           <span
-            className="cn-display shrink-0 text-[1.15rem] leading-[1.15] tracking-[0.06em] text-[var(--cn-red)] sm:text-xl sm:tracking-[0.08em]"
+            className="cn-display shrink-0 text-[2.4rem] leading-none tracking-[0.02em] text-[var(--cn-red)] sm:text-[2.85rem]"
             aria-label="9 US dollars"
           >
             $9
