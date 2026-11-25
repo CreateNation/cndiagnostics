@@ -7,7 +7,7 @@ export function SandboxBanner() {
   const parts: string[] = [];
   if (isTrackingDisabled()) parts.push("tracking off");
   if (isGhlDisabled()) parts.push("GHL off");
-  if (process.env.DEV_BYPASS_PAYMENT === "true") parts.push("payment bypass");
+  parts.push("free lead flow");
 
   return (
     <div className="bg-amber-500 px-3 py-1.5 text-center text-[11px] font-medium tracking-wide text-black">

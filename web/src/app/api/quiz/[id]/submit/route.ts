@@ -5,6 +5,7 @@ import {
   getSubmission,
   updateSubmission,
 } from "@/lib/store";
+import { enqueueMetaCompleteRegistration } from "@/lib/meta/capi-purchase";
 import { absoluteUrl } from "@/lib/urls";
 import type { Answers } from "@/lib/types";
 
@@ -87,8 +88,15 @@ export async function POST(
     status: "quiz_completed",
   });
   await appendEvent(id, "quiz_completed");
+  await appendEvent(id, "assessment_completed");
   await appendEvent(id, "report_generation_started");
   await updateSubmission(id, { status: "report_generating" });
+
+  const completed = await getSubmission(id);
+  if (completed) {
+    // Meta CAPI CompleteRegistration — separate from Lead (contact submit).
+    await enqueueMetaCompleteRegistration({ submission: completed });
+  }
 
   return NextResponse.json({
     ok: true,

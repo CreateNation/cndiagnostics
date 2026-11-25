@@ -19,8 +19,7 @@ export default async function QuizPage({
   let submission = await getSubmission(id);
   if (!submission) notFound();
 
-  // Always run when session_id is present: verifies paid, and enqueues Meta CAPI
-  // even if the submission is already paid (deduped by purchase_${session.id}).
+  // Dormant Stripe success redirect: verify paid + enqueue Purchase CAPI.
   if (sessionId) {
     submission =
       (await confirmCheckoutSession(id, sessionId)) ?? submission;
@@ -46,16 +45,19 @@ export default async function QuizPage({
             </span>
           </Link>
           <span className="shrink-0 text-[10px] uppercase tracking-[0.14em] text-[var(--cn-muted)] sm:text-[11px] sm:tracking-[0.18em]">
-            <span className="sm:hidden">25 Q · ~5 min</span>
-            <span className="hidden sm:inline">25 questions · ~5 minutes</span>
+            <span className="sm:hidden">Free · 25 Q</span>
+            <span className="hidden sm:inline">
+              Free · 25 questions · ~5 minutes
+            </span>
           </span>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12 md:py-16">
+        {/* PurchaseTracker only fires when a Stripe session_id is present (dormant path). */}
         <PurchaseTracker
-          sessionId={sessionId ?? submission.stripeSessionId}
+          sessionId={sessionId ?? null}
           submissionId={submission.id}
-          paid={unlocked}
+          paid={unlocked && Boolean(sessionId)}
         />
         <QuizFlow
           submissionId={submission.id}

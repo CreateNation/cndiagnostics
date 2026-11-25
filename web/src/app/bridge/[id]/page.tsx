@@ -59,7 +59,7 @@ export default async function BridgePage({
           <p className="animate-fade-up-late mt-5 max-w-xl text-base leading-relaxed text-white/62 sm:mt-6 sm:text-lg">
             {failed
               ? "Please retry from the quiz or contact us. Your answers were saved."
-              : "Based on your answers, your personalized growth report is ready to open — and we’re emailing you the PDF."}
+              : "Assessment complete. Your personalized growth report is ready to open — and we’re emailing you the PDF plus next steps for your consultation."}
           </p>
         )}
 

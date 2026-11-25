@@ -98,10 +98,13 @@ export function QuizFlow({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submit failed");
-      track("quiz_completed", {
+      track("assessment_completed", {
         submission_id: submissionId,
+        event_id: `complete_registration_${submissionId}`,
         stage: data.stageName,
         cta: data.cta,
+        value: 0,
+        currency: "USD",
       });
       // Bridge shows the progress bar while /generate runs.
       router.push(`/bridge/${submissionId}`);
@@ -130,13 +133,13 @@ export function QuizFlow({
           Locked
         </p>
         <h1 className="cn-display mt-3 text-3xl text-[var(--cn-ink)]">
-          Payment required
+          Start from the homepage
         </h1>
         <p className="mt-3 text-[var(--cn-muted)]">
-          Complete the $9 checkout to unlock your diagnostic quiz.
+          Enter your details to unlock the free 25-question marketing diagnostic.
         </p>
         <a href="/" className="cn-btn mt-8 inline-flex">
-          Back to start
+          Get my free audit
           <span aria-hidden>↗</span>
         </a>
       </div>

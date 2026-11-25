@@ -18,7 +18,7 @@ const body = Cairo({
 export const metadata: Metadata = {
   title: "CNM Business Growth Diagnostic | Create Nation",
   description:
-    "A $9 assessment that pinpoints where your marketing-to-sales funnel is leaking — built for UAE business owners.",
+    "A free marketing diagnostic that pinpoints where your marketing-to-sales funnel is leaking — built for UAE business owners.",
 };
 
 export default function RootLayout({

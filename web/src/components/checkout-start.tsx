@@ -3,10 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { track } from "@/lib/analytics/track";
-import {
-  DIAGNOSTIC_CURRENCY,
-  DIAGNOSTIC_PURCHASE_VALUE,
-} from "@/lib/analytics/config";
 
 export function CheckoutStart({
   cancelled,
@@ -27,6 +23,7 @@ export function CheckoutStart({
     setError(null);
 
     const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
     if (!trimmedEmail) {
       setError("Work email is required.");
       return;
@@ -35,11 +32,16 @@ export function CheckoutStart({
       setError("Enter a valid work email.");
       return;
     }
+    if (!trimmedPhone || trimmedPhone.replace(/\D/g, "").length < 7) {
+      setError("Phone number is required.");
+      return;
+    }
 
     setLoading(true);
     track("checkout_started", {
       email_present: true,
-      phone_present: Boolean(phone),
+      phone_present: true,
+      mode: "free_lead",
     });
     try {
       const cookie = (key: string) => {
@@ -60,12 +62,11 @@ export function CheckoutStart({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: trimmedEmail,
-          name: name || undefined,
-          phone: phone || undefined,
-          // Captured for Meta CAPI (must be browser UA + page URL, not Stripe's).
+          name: name.trim() || undefined,
+          phone: trimmedPhone,
+          // Captured for Meta CAPI (must be browser UA + page URL).
           clientUserAgent: navigator.userAgent,
           clientEventSourceUrl: window.location.href,
-          // Genuine Meta cookies only — omit if absent (server will not invent).
           ...(fbp ? { clientFbp: fbp } : {}),
           ...(fbc ? { clientFbc: fbc } : {}),
         }),
@@ -76,31 +77,44 @@ export function CheckoutStart({
         mode?: string;
         quizUrl?: string;
         checkoutUrl?: string;
+        submissionId?: string;
+        eventId?: string;
       } = {};
       try {
         data = raw ? (JSON.parse(raw) as typeof data) : {};
       } catch {
         throw new Error(
-          raw?.slice(0, 180) || `Checkout failed (${res.status})`,
+          raw?.slice(0, 180) || `Something went wrong (${res.status})`,
         );
       }
-      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      if (!res.ok) throw new Error(data.error || "Could not start diagnostic");
 
-      if (data.mode === "dev_bypass" && data.quizUrl) {
-        track("purchase", {
-          transaction_id: `dev_${Date.now()}`,
-          value: DIAGNOSTIC_PURCHASE_VALUE,
-          currency: DIAGNOSTIC_CURRENCY,
-          mode: "dev_bypass",
+      // Free path (default): Lead fires once contact is saved + CRM sync attempted.
+      if (
+        (data.mode === "free_lead" || data.mode === "dev_bypass") &&
+        data.quizUrl
+      ) {
+        const submissionId = data.submissionId ?? "";
+        const eventId =
+          data.eventId ||
+          (submissionId ? `lead_${submissionId}` : undefined);
+        track("lead", {
+          submission_id: submissionId,
+          event_id: eventId,
+          value: 0,
+          currency: "USD",
+          mode: data.mode,
         });
         router.push(data.quizUrl.replace(/^https?:\/\/[^/]+/, ""));
         return;
       }
+
+      // Dormant Stripe path only when ENABLE_STRIPE_CHECKOUT=true.
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
         return;
       }
-      throw new Error("No checkout URL returned");
+      throw new Error("No diagnostic URL returned");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
@@ -126,26 +140,22 @@ export function CheckoutStart({
       )}
 
       <div className="mb-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2
-            className={`cn-display min-w-0 text-[1.15rem] leading-[1.15] tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
-              card ? "text-[var(--cn-ink)]" : "text-white"
-            }`}
-          >
-            Start your
-            <br />
-            marketing diagnostic
-          </h2>
-          <span
-            className="cn-display shrink-0 text-[2.4rem] leading-none tracking-[0.02em] text-[var(--cn-red)] sm:text-[2.85rem]"
-            aria-label="9 US dollars"
-          >
-            $9
-          </span>
-        </div>
+        <h2
+          className={`cn-display text-[1.15rem] leading-[1.15] tracking-[0.06em] sm:text-xl sm:tracking-[0.08em] ${
+            card ? "text-[var(--cn-ink)]" : "text-white"
+          }`}
+        >
+          Start your
+          <br />
+          marketing diagnostic
+        </h2>
         <ul className="mt-3 flex flex-col gap-1.5 text-sm font-medium leading-snug text-[#15803d] sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
           {(
-            ["Assessment", "Personalised report", "Consultation"] as const
+            [
+              "Free assessment",
+              "Personalised report",
+              "Consultation",
+            ] as const
           ).map((item) => (
             <li key={item} className="flex items-center gap-1.5">
               <span aria-hidden className="text-base leading-none">
@@ -172,7 +182,7 @@ export function CheckoutStart({
               : "border-white/15 bg-white/5 text-white/80"
           }`}
         >
-          Checkout cancelled — you can try again anytime.
+          You can start again anytime — the diagnostic is free.
         </p>
       )}
 
@@ -200,7 +210,8 @@ export function CheckoutStart({
               card ? "text-[var(--cn-muted)]" : "text-white/45"
             }`}
           >
-            Work email <span className="normal-case tracking-normal">(required)</span>
+            Work email{" "}
+            <span className="normal-case tracking-normal">(required)</span>
           </span>
           <input
             id="email"
@@ -220,7 +231,8 @@ export function CheckoutStart({
               card ? "text-[var(--cn-muted)]" : "text-white/45"
             }`}
           >
-            Phone
+            Phone{" "}
+            <span className="normal-case tracking-normal">(required)</span>
           </span>
           <input
             id="phone"
@@ -230,6 +242,8 @@ export function CheckoutStart({
             placeholder="+971 50 000 0000"
             className={card ? "cn-input-light" : "cn-input"}
             autoComplete="tel"
+            required
+            aria-required="true"
           />
         </label>
       </div>
@@ -239,7 +253,7 @@ export function CheckoutStart({
         disabled={loading}
         className="cn-btn mt-6 w-full whitespace-normal px-3 text-[0.8rem] leading-snug tracking-[0.04em] sm:px-6 sm:text-base"
       >
-        {loading ? "Opening checkout…" : "Get My Marketing Audit for $9"}
+        {loading ? "Starting…" : "Get My Free Marketing Audit"}
       </button>
 
       {error && (
@@ -257,12 +271,7 @@ export function CheckoutStart({
           card ? "text-[var(--cn-muted)]" : "text-white/40"
         }`}
       >
-        <span className="sm:hidden">
-          Secure Stripe · Report in minutes · UAE businesses
-        </span>
-        <span className="hidden sm:inline">
-          Secure Stripe checkout · Report in minutes · Built for UAE businesses
-        </span>
+        Free · 25 questions · Report by email · Built for UAE businesses
       </p>
     </form>
   );

@@ -20,7 +20,10 @@ import {
   upsertGhlOpportunity,
 } from "./ghl";
 import { updateSubmission } from "./store";
-import { DIAGNOSTIC_PURCHASE_VALUE } from "./analytics/config";
+import {
+  DIAGNOSTIC_LEAD_VALUE,
+  DIAGNOSTIC_PURCHASE_VALUE,
+} from "./analytics/config";
 import { isGhlDisabled } from "./runtime-flags";
 
 function formatAnswerValue(
@@ -151,7 +154,7 @@ export async function syncCheckoutLeadToGhl(
     email: submission.email,
     name: submission.name,
     phone: submission.phone,
-    tags: ["CNM Diagnostic Lead", "Checkout Started"],
+    tags: ["CNM Diagnostic Lead", "Free Diagnostic", "Lead Captured"],
     fields: { cnm_diag_submission_id: submission.id },
     type: "lead",
   });
@@ -166,6 +169,7 @@ export async function syncCheckoutLeadToGhl(
       submission.name || submission.email,
       "—",
       "CNM Diagnostic",
+      "(free)",
     ].join(" ");
 
     const opportunity = await upsertGhlOpportunity({
@@ -173,6 +177,7 @@ export async function syncCheckoutLeadToGhl(
       name: opportunityName,
       pipelineStageId: stageId,
       existingOpportunityId: opportunityId,
+      monetaryValue: DIAGNOSTIC_LEAD_VALUE,
     });
     opportunityId = opportunity.opportunityId ?? opportunityId;
     if (opportunity.error) {
@@ -187,7 +192,7 @@ export async function syncCheckoutLeadToGhl(
   });
 
   await fireGhlWebhook({
-    event: "checkout_started",
+    event: "lead_captured",
     submission_id: submission.id,
     email: submission.email,
     name: submission.name,
@@ -345,7 +350,7 @@ export async function syncBookCallStageToGhl(
       ].join(" "),
       pipelineStageId: resolveBookCallStageId(),
       existingOpportunityId: opportunityId,
-      monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
+      monetaryValue: DIAGNOSTIC_LEAD_VALUE,
     });
     opportunityId = opportunity.opportunityId ?? opportunityId;
     if (opportunity.error) {
@@ -510,7 +515,7 @@ export async function syncDiagnosticLeadToGhl(
         name: opportunityName,
         pipelineStageId: resolveReportReadyStageId(),
         existingOpportunityId: opportunityId,
-        monetaryValue: DIAGNOSTIC_PURCHASE_VALUE,
+        monetaryValue: DIAGNOSTIC_LEAD_VALUE,
       });
       opportunityId = opportunity.opportunityId ?? opportunityId;
       if (opportunity.error) {

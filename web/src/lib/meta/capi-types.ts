@@ -4,15 +4,22 @@ export type MetaCapiDeliveryStatus =
   | "sent"
   | "failed";
 
+/** Standard Meta Pixel / CAPI event names we send server-side. */
+export type MetaCapiEventName =
+  | "Purchase"
+  | "Lead"
+  | "CompleteRegistration";
+
 export type MetaCapiPurchaseDelivery = {
   eventId: string;
-  eventName: "Purchase";
-  sessionId: string;
+  eventName: MetaCapiEventName;
+  /** Stripe Checkout Session ID for Purchase; null for Lead / CompleteRegistration */
+  sessionId: string | null;
   submissionId: string;
   status: MetaCapiDeliveryStatus;
-  /** Unix seconds — original payment time, preserved across retries */
+  /** Unix seconds — original event time, preserved across retries */
   eventTime: number;
-  /** Major currency units (e.g. 9.0), from Stripe amount_total */
+  /** Major currency units (0 for free Lead / CompleteRegistration) */
   value: number;
   currency: string;
   emailHash: string | null;
@@ -31,4 +38,12 @@ export type MetaCapiPurchaseDelivery = {
 
 export function purchaseEventId(sessionId: string): string {
   return `purchase_${sessionId}`;
+}
+
+export function leadEventId(submissionId: string): string {
+  return `lead_${submissionId}`;
+}
+
+export function completeRegistrationEventId(submissionId: string): string {
+  return `complete_registration_${submissionId}`;
 }

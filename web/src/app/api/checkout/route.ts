@@ -5,9 +5,11 @@ import {
   DIAGNOSTIC_PRICE_USD,
   getStripe,
   getStripePriceId,
-  isDevBypassPayment,
+  isFreeDiagnosticFlow,
+  isStripeCheckoutEnabled,
 } from "@/lib/stripe";
 import { syncCheckoutLeadToGhl } from "@/lib/ghl-lead";
+import { enqueueMetaLead } from "@/lib/meta/capi-purchase";
 import { absoluteUrl } from "@/lib/urls";
 import type Stripe from "stripe";
 
@@ -32,17 +34,26 @@ export async function POST(req: Request) {
     };
     const origin = requestOrigin(req);
     const email = body.email?.trim() || "";
+    const phone = body.phone?.trim() || "";
+    const name = body.name?.trim() || "";
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
         { error: "A valid work email is required" },
         { status: 400 },
       );
     }
+    if (!phone || phone.replace(/\D/g, "").length < 7) {
+      return NextResponse.json(
+        { error: "A valid phone number is required" },
+        { status: 400 },
+      );
+    }
 
     const submission = await createSubmission({
       email,
-      name: body.name ?? null,
-      phone: body.phone?.trim() || null,
+      name: name || null,
+      phone,
       clientUserAgent:
         body.clientUserAgent?.trim() ||
         req.headers.get("user-agent") ||
@@ -58,26 +69,48 @@ export async function POST(req: Request) {
 
     await appendEvent(submission.id, "checkout_started", {
       email,
-      phone: body.phone ?? null,
+      phone,
+      mode: isFreeDiagnosticFlow() ? "free_lead" : "stripe",
     });
 
-    // Form submitted → GHL New Lead opportunity (before Stripe redirect).
-    await syncCheckoutLeadToGhl(submission);
+    // Form submitted → GHL New Lead opportunity.
+    const ghl = await syncCheckoutLeadToGhl(submission);
+    const refreshed =
+      (await updateSubmission(submission.id, {
+        ghlContactId: ghl.contactId ?? submission.ghlContactId,
+        ghlOpportunityId: ghl.opportunityId ?? submission.ghlOpportunityId,
+      })) ?? submission;
 
-    if (isDevBypassPayment()) {
-      const paid = await updateSubmission(submission.id, {
+    // ─── Free lead path (default) ───
+    if (isFreeDiagnosticFlow()) {
+      const unlocked = await updateSubmission(refreshed.id, {
         status: "paid",
-        stripeSessionId: `dev_${submission.id}`,
+        stripeSessionId: null,
         clientReportToken: nanoid(24),
         advisorReportToken: nanoid(32),
       });
-      await appendEvent(paid.id, "purchase_completed", { mode: "dev_bypass" });
+      await appendEvent(unlocked.id, "lead_captured", {
+        mode: "free_diagnostic",
+        ghl_contact_id: unlocked.ghlContactId,
+      });
+
+      // Meta CAPI Lead — after contact is in our system + CRM sync attempted.
+      await enqueueMetaLead({ submission: unlocked });
 
       return NextResponse.json({
-        mode: "dev_bypass",
-        submissionId: paid.id,
-        quizUrl: absoluteUrl(`/quiz/${paid.id}`, origin),
+        mode: "free_lead",
+        submissionId: unlocked.id,
+        quizUrl: absoluteUrl(`/quiz/${unlocked.id}`, origin),
+        eventId: `lead_${unlocked.id}`,
       });
+    }
+
+    // ─── Dormant Stripe path (ENABLE_STRIPE_CHECKOUT=true) ───
+    if (!isStripeCheckoutEnabled()) {
+      return NextResponse.json(
+        { error: "Checkout is not available" },
+        { status: 500 },
+      );
     }
 
     const stripe = getStripe();
@@ -108,11 +141,11 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      customer_email: body.email || undefined,
+      customer_email: email || undefined,
       line_items: lineItems,
       metadata: {
         submission_id: submission.id,
-        phone: body.phone?.trim() || "",
+        phone,
       },
       success_url: absoluteUrl(
         `/quiz/${submission.id}?session_id={CHECKOUT_SESSION_ID}`,

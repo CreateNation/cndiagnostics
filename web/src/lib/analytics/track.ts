@@ -1,6 +1,7 @@
 import { isTrackingDisabled } from "@/lib/runtime-flags";
 import {
   DIAGNOSTIC_CURRENCY,
+  DIAGNOSTIC_LEAD_VALUE,
   DIAGNOSTIC_PURCHASE_VALUE,
   getAnalyticsIds,
 } from "./config";
@@ -113,23 +114,48 @@ export function track(event: string, payload: TrackPayload = {}): void {
 
   switch (event) {
     case "checkout_started":
-      gtagEvent("begin_checkout", {
+      // Form intent — free flow (not a paid checkout).
+      gtagEvent("generate_lead", {
         currency: DIAGNOSTIC_CURRENCY,
-        value: DIAGNOSTIC_PURCHASE_VALUE,
-        items: [
-          {
-            item_name: "CNM Growth Diagnostic",
-            price: DIAGNOSTIC_PURCHASE_VALUE,
-            quantity: 1,
-          },
-        ],
+        value: DIAGNOSTIC_LEAD_VALUE,
       });
-      tiktokEvent("InitiateCheckout", {
-        value: DIAGNOSTIC_PURCHASE_VALUE,
-        currency: DIAGNOSTIC_CURRENCY,
+      tiktokEvent("ClickButton", {
+        content_name: "Start Free Diagnostic",
       });
       break;
 
+    case "lead": {
+      const submissionId = String(enriched.submission_id ?? "");
+      const eventId =
+        typeof enriched.event_id === "string" && enriched.event_id
+          ? enriched.event_id
+          : submissionId
+            ? `lead_${submissionId}`
+            : undefined;
+      gtagEvent("generate_lead", {
+        currency: DIAGNOSTIC_CURRENCY,
+        value: Number(enriched.value ?? DIAGNOSTIC_LEAD_VALUE),
+        event_id: eventId,
+        submission_id: submissionId,
+      });
+      if (ids.googleAdsId && process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL) {
+        // Optional: remap this Ads label to Lead in Google Ads UI.
+        gtagEvent("conversion", {
+          send_to: `${ids.googleAdsId}/${process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL}`,
+          value: DIAGNOSTIC_LEAD_VALUE,
+          currency: DIAGNOSTIC_CURRENCY,
+          transaction_id: eventId,
+        });
+      }
+      tiktokEvent("SubmitForm", {
+        content_name: "Diagnostic Lead",
+        value: DIAGNOSTIC_LEAD_VALUE,
+        currency: DIAGNOSTIC_CURRENCY,
+      });
+      break;
+    }
+
+    // Dormant paid path — kept for ENABLE_STRIPE_CHECKOUT.
     case "purchase": {
       const transactionId = String(enriched.transaction_id ?? "");
       const eventId =
@@ -172,13 +198,28 @@ export function track(event: string, payload: TrackPayload = {}): void {
       break;
 
     case "quiz_completed":
-      gtagEvent("generate_lead", {
+    case "assessment_completed": {
+      const submissionId = String(enriched.submission_id ?? "");
+      const eventId =
+        typeof enriched.event_id === "string" && enriched.event_id
+          ? enriched.event_id
+          : submissionId
+            ? `complete_registration_${submissionId}`
+            : undefined;
+      gtagEvent("assessment_completed", {
+        ...enriched,
+        event_id: eventId,
+        value: DIAGNOSTIC_LEAD_VALUE,
         currency: DIAGNOSTIC_CURRENCY,
-        value: DIAGNOSTIC_PURCHASE_VALUE,
       });
       gtagEvent("quiz_completed", enriched);
-      tiktokEvent("SubmitForm", { content_name: "Diagnostic Quiz" });
+      tiktokEvent("CompleteRegistration", {
+        content_name: "Diagnostic Assessment",
+        value: DIAGNOSTIC_LEAD_VALUE,
+        currency: DIAGNOSTIC_CURRENCY,
+      });
       break;
+    }
 
     case "report_viewed":
       gtagEvent("report_viewed", enriched);

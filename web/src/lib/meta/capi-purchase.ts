@@ -3,7 +3,10 @@ import type { Submission } from "@/lib/types";
 import { isTrackingDisabled } from "@/lib/runtime-flags";
 import { hashEmail, hashPhone } from "./hash";
 import {
+  completeRegistrationEventId,
+  leadEventId,
   purchaseEventId,
+  type MetaCapiEventName,
   type MetaCapiPurchaseDelivery,
 } from "./capi-types";
 import {
@@ -82,7 +85,7 @@ function buildDraft(input: {
   const eventId = purchaseEventId(input.session.id);
   return {
     eventId,
-    eventName: "Purchase",
+    eventName: "Purchase" as const,
     sessionId: input.session.id,
     submissionId: input.submission.id,
     status: "pending",
@@ -108,7 +111,11 @@ function buildDraft(input: {
   };
 }
 
-async function sendPurchaseToMeta(
+function contentTypeFor(eventName: MetaCapiEventName): string {
+  return eventName === "Purchase" ? "product" : "lead";
+}
+
+async function sendMetaEvent(
   delivery: MetaCapiPurchaseDelivery,
 ): Promise<{ ok: boolean; error?: string }> {
   const token = accessToken();
@@ -126,7 +133,7 @@ async function sendPurchaseToMeta(
   if (delivery.fbc) userData.fbc = delivery.fbc;
 
   const event: Record<string, unknown> = {
-    event_name: "Purchase",
+    event_name: delivery.eventName,
     event_time: delivery.eventTime,
     event_id: delivery.eventId,
     action_source: "website",
@@ -135,7 +142,7 @@ async function sendPurchaseToMeta(
       currency: delivery.currency,
       value: delivery.value,
       content_name: "Create Nation Diagnostics",
-      content_type: "product",
+      content_type: contentTypeFor(delivery.eventName),
     },
   };
   if (delivery.clientEventSourceUrl) {
@@ -200,7 +207,7 @@ export async function processMetaPurchaseDelivery(
     };
     await saveDelivery(processing);
 
-    const result = await sendPurchaseToMeta(processing);
+    const result = await sendMetaEvent(processing);
     if (result.ok) {
       const sent: MetaCapiPurchaseDelivery = {
         ...processing,
@@ -301,7 +308,7 @@ export async function enqueueMetaPurchase(input: {
   }
 }
 
-/** Durable retry worker entrypoint. */
+/** Durable retry worker entrypoint (Purchase, Lead, CompleteRegistration). */
 export async function retryDueMetaPurchases(limit = 20): Promise<{
   processed: number;
   results: Array<{ eventId: string; status: string; error?: string }>;
@@ -314,4 +321,120 @@ export async function retryDueMetaPurchases(limit = 20): Promise<{
     results.push({ eventId: d.eventId, status: r.status, error: r.error });
   }
   return { processed: results.length, results };
+}
+
+function buildSubmissionEventDraft(input: {
+  eventId: string;
+  eventName: Exclude<MetaCapiEventName, "Purchase">;
+  submission: Submission;
+  eventTime: number;
+}): MetaCapiPurchaseDelivery {
+  const now = new Date().toISOString();
+  return {
+    eventId: input.eventId,
+    eventName: input.eventName,
+    sessionId: null,
+    submissionId: input.submission.id,
+    status: "pending",
+    eventTime: input.eventTime,
+    value: 0,
+    currency: "usd",
+    emailHash: input.submission.email
+      ? hashEmail(input.submission.email)
+      : null,
+    phoneHash: input.submission.phone
+      ? hashPhone(input.submission.phone)
+      : null,
+    clientUserAgent: input.submission.clientUserAgent ?? null,
+    clientEventSourceUrl: input.submission.clientEventSourceUrl ?? null,
+    fbp: input.submission.clientFbp ?? null,
+    fbc: input.submission.clientFbc ?? null,
+    attempts: 0,
+    lastError: null,
+    createdAt: now,
+    updatedAt: now,
+    sentAt: null,
+    nextAttemptAt: Date.now(),
+  };
+}
+
+async function enqueueSubmissionMetaEvent(input: {
+  eventId: string;
+  eventName: Exclude<MetaCapiEventName, "Purchase">;
+  submission: Submission;
+}): Promise<{ eventId: string; outcome: string; error?: string }> {
+  try {
+    if (isTrackingDisabled()) {
+      return { eventId: input.eventId, outcome: "skipped_tracking_disabled" };
+    }
+    if (!accessToken()) {
+      console.warn("[meta-capi] META_CAPI_ACCESS_TOKEN not set — skip enqueue");
+      return { eventId: input.eventId, outcome: "skipped_no_token" };
+    }
+
+    const existing = await getDelivery(input.eventId);
+    if (existing?.status === "sent") {
+      return { eventId: input.eventId, outcome: "already_sent" };
+    }
+
+    const eventTime =
+      existing?.eventTime ?? Math.floor(Date.now() / 1000);
+    const draft = buildSubmissionEventDraft({
+      eventId: input.eventId,
+      eventName: input.eventName,
+      submission: input.submission,
+      eventTime,
+    });
+
+    if (existing) {
+      draft.eventTime = existing.eventTime;
+      draft.createdAt = existing.createdAt;
+      draft.attempts = existing.attempts;
+      draft.status = "pending";
+      draft.nextAttemptAt = Date.now();
+      draft.updatedAt = new Date().toISOString();
+      await saveDelivery(draft);
+    } else {
+      await createPendingDelivery(draft);
+    }
+
+    const processed = await processMetaPurchaseDelivery(input.eventId);
+    return {
+      eventId: input.eventId,
+      outcome: processed.status,
+      error: processed.error,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "enqueue failed";
+    console.error(`[meta-capi] ${input.eventName} enqueue error`, message);
+    return { eventId: input.eventId, outcome: "error", error: message };
+  }
+}
+
+/**
+ * Contact details submitted + CRM sync attempted → Meta Lead.
+ * Deduped by lead_${submissionId}. Never throws to callers.
+ */
+export async function enqueueMetaLead(input: {
+  submission: Submission;
+}): Promise<{ eventId: string; outcome: string; error?: string }> {
+  return enqueueSubmissionMetaEvent({
+    eventId: leadEventId(input.submission.id),
+    eventName: "Lead",
+    submission: input.submission,
+  });
+}
+
+/**
+ * Full diagnostic quiz completed → Meta CompleteRegistration.
+ * Deduped by complete_registration_${submissionId}. Never throws to callers.
+ */
+export async function enqueueMetaCompleteRegistration(input: {
+  submission: Submission;
+}): Promise<{ eventId: string; outcome: string; error?: string }> {
+  return enqueueSubmissionMetaEvent({
+    eventId: completeRegistrationEventId(input.submission.id),
+    eventName: "CompleteRegistration",
+    submission: input.submission,
+  });
 }

@@ -45,6 +45,8 @@ export function hasAnyAnalytics(ids: AnalyticsIds = getAnalyticsIds()): boolean 
   );
 }
 
-/** Stripe diagnostic price — used for Purchase / conversion value */
+/** Legacy paid price — kept for dormant Stripe / Purchase path only */
 export const DIAGNOSTIC_PURCHASE_VALUE = 9;
+/** Free lead / assessment completion value for ads optimization */
+export const DIAGNOSTIC_LEAD_VALUE = 0;
 export const DIAGNOSTIC_CURRENCY = "USD";
